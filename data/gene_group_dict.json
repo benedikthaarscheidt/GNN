@@ -1,0 +1,2843 @@
+{
+    "ABCB1": [
+        "CD molecules",
+        "ATP binding cassette subfamily B"
+    ],
+    "ABI1": [
+        "N/A"
+    ],
+    "ABL1": [
+        "SH2 domain containing",
+        "Abl family tyrosine kinases"
+    ],
+    "ABL2": [
+        "SH2 domain containing",
+        "Abl family tyrosine kinases"
+    ],
+    "ACKR3": [
+        "Atypical chemokine receptors"
+    ],
+    "ACSL3": [
+        "Acyl-CoA synthetase family"
+    ],
+    "ACVR1": [
+        "Type 1 receptor serine/threonine kinases"
+    ],
+    "ACVR2A": [
+        "Type 2 receptor serine/threonine kinases"
+    ],
+    "AFDN": [
+        "PDZ domain containing"
+    ],
+    "AFF1": [
+        "AF4/FMR2 family",
+        "Super elongation complex"
+    ],
+    "AFF3": [
+        "AF4/FMR2 family",
+        "Super elongation complex"
+    ],
+    "AFF4": [
+        "AF4/FMR2 family",
+        "Super elongation complex"
+    ],
+    "AJUBA": [
+        "Ajuba family"
+    ],
+    "AKT1": [
+        "Pleckstrin homology domain containing",
+        "AKT kinases"
+    ],
+    "AKT2": [
+        "Pleckstrin homology domain containing",
+        "MicroRNA protein coding host genes",
+        "AKT kinases"
+    ],
+    "AKT3": [
+        "Pleckstrin homology domain containing",
+        "AKT kinases"
+    ],
+    "ALB": [
+        "Albuminoid family"
+    ],
+    "ALK": [
+        "Receptor tyrosine kinases",
+        "CD molecules"
+    ],
+    "AMER1": [
+        "APC membrane recruitment proteins"
+    ],
+    "APC": [
+        "Armadillo repeat containing",
+        "Protein phosphatase 1 regulatory subunits"
+    ],
+    "APOBEC3B": [
+        "Apolipoprotein B mRNA editing enzyme catalytic subunits",
+        "Minor histocompatibility antigens"
+    ],
+    "AR": [
+        "Nuclear receptor subfamily 3 group C"
+    ],
+    "ARAF": [
+        "Mitogen-activated protein kinase kinase kinases",
+        "RAF family"
+    ],
+    "ARHGAP5": [
+        "Rho GTPase activating proteins"
+    ],
+    "ARHGAP26": [
+        "AH/BAR family Rho GTPase activating proteins"
+    ],
+    "ARHGAP35": [
+        "Rho GTPase activating proteins"
+    ],
+    "ARHGEF10": [
+        "Dbl family Rho GEFs"
+    ],
+    "ARHGEF10L": [
+        "Dbl family Rho GEFs"
+    ],
+    "ARHGEF12": [
+        "Dbl family Rho GEFs",
+        "PDZ domain containing"
+    ],
+    "ARID1A": [
+        "AT-rich interaction domain containing",
+        "Armadillo like helical domain containing",
+        "BAF complex subunits"
+    ],
+    "ARID1B": [
+        "AT-rich interaction domain containing",
+        "Armadillo like helical domain containing",
+        "BAF complex subunits"
+    ],
+    "ARID2": [
+        "AT-rich interaction domain containing",
+        "Armadillo like helical domain containing",
+        "PBAF complex subunits"
+    ],
+    "ARNT": [
+        "Basic helix-loop-helix proteins",
+        "PAS domain containing"
+    ],
+    "ASPSCR1": [
+        "UBX domain containing"
+    ],
+    "ASXL1": [
+        "N/A"
+    ],
+    "ASXL2": [
+        "N/A"
+    ],
+    "ATF1": [
+        "Basic leucine zipper proteins"
+    ],
+    "ATF7IP": [
+        "Fibronectin type III domain containing"
+    ],
+    "ATG7": [
+        "Ubiquitin like modifier activating enzymes",
+        "Autophagy related"
+    ],
+    "ATIC": [
+        "Purinosome"
+    ],
+    "ATM": [
+        "Armadillo like helical domain containing"
+    ],
+    "ATP1A1": [
+        "ATPase Na+/K+ transporting subunits"
+    ],
+    "ATP2B3": [
+        "ATPases Ca2+ transporting",
+        "Cilia and flagella associated"
+    ],
+    "ATR": [
+        "Armadillo like helical domain containing"
+    ],
+    "ATRX": [
+        "SNF2 related family"
+    ],
+    "AXIN1": [
+        "Protein phosphatase 1 regulatory subunits"
+    ],
+    "AXIN2": [
+        "N/A"
+    ],
+    "B2M": [
+        "C1-set domain containing"
+    ],
+    "BAP1": [
+        "Ubiquitin C-terminal hydrolases"
+    ],
+    "BARD1": [
+        "Ring finger proteins",
+        "Ankyrin repeat domain containing",
+        "BRCA1 B complex"
+    ],
+    "BAX": [
+        "BCL2 family"
+    ],
+    "BCL2": [
+        "Protein phosphatase 1 regulatory subunits",
+        "BCL2 family"
+    ],
+    "BCL2L12": [
+        "BCL2 family"
+    ],
+    "BCL3": [
+        "Ankyrin repeat domain containing",
+        "MicroRNA protein coding host genes"
+    ],
+    "BCL6": [
+        "Zinc fingers C2H2-type",
+        "BTB domain containing"
+    ],
+    "BCL7A": [
+        "BAF complex subunits"
+    ],
+    "BCL9": [
+        "Wnt enhanceosome complex"
+    ],
+    "BCL9L": [
+        "Wnt enhanceosome complex"
+    ],
+    "BCL10": [
+        "Caspase recruitment domain containing",
+        "CBM complex"
+    ],
+    "BCL11A": [
+        "Zinc fingers C2H2-type",
+        "BAF complex subunits"
+    ],
+    "BCL11B": [
+        "Zinc fingers C2H2-type",
+        "BAF complex subunits"
+    ],
+    "BCLAF1": [
+        "WTAP complex"
+    ],
+    "BCOR": [
+        "Ankyrin repeat domain containing"
+    ],
+    "BCORL1": [
+        "Ankyrin repeat domain containing"
+    ],
+    "BCR": [
+        "Pleckstrin homology domain containing",
+        "Dbl family Rho GEFs",
+        "C2 domain containing",
+        "My-T-BRC complex"
+    ],
+    "BIRC3": [
+        "Ring finger proteins",
+        "Baculoviral IAP repeat containing",
+        "Caspase recruitment domain containing"
+    ],
+    "BIRC6": [
+        "Ubiquitin conjugating enzymes E2",
+        "Baculoviral IAP repeat containing",
+        "MicroRNA protein coding host genes"
+    ],
+    "BLM": [
+        "RecQ like helicases"
+    ],
+    "BMPR1A": [
+        "Type 1 receptor serine/threonine kinases",
+        "CD molecules"
+    ],
+    "BMPR2": [
+        "Type 2 receptor serine/threonine kinases"
+    ],
+    "BRAF": [
+        "Mitogen-activated protein kinase kinase kinases",
+        "RAF family"
+    ],
+    "BRCA1": [
+        "Ring finger proteins",
+        "FA complementation groups",
+        "Protein phosphatase 1 regulatory subunits",
+        "BRCA1 A complex",
+        "BRCA1 B complex",
+        "BRCA1 C complex"
+    ],
+    "BRCA2": [
+        "FA complementation groups"
+    ],
+    "BRD3": [
+        "Bromodomain and extra-terminal domain family",
+        "Bromodomain containing"
+    ],
+    "BRD4": [
+        "Bromodomain and extra-terminal domain family",
+        "Bromodomain containing"
+    ],
+    "BRD7": [
+        "Bromodomain containing",
+        "PBAF complex subunits"
+    ],
+    "BRIP1": [
+        "DEAH-box helicases",
+        "FA complementation groups",
+        "BRCA1 B complex"
+    ],
+    "BTG1": [
+        "BTG/Tob family"
+    ],
+    "BTK": [
+        "Pleckstrin homology domain containing",
+        "SH2 domain containing",
+        "Tec family tyrosine kinases"
+    ],
+    "BUB1B": [
+        "N/A"
+    ],
+    "CACNA1D": [
+        "Calcium voltage-gated channel alpha1 subunits"
+    ],
+    "CALR": [
+        "MicroRNA protein coding host genes"
+    ],
+    "CAMTA1": [
+        "IPT domain containing",
+        "Calmodulin binding transcription activators "
+    ],
+    "CANT1": [
+        "N/A"
+    ],
+    "CARD11": [
+        "Membrane associated guanylate kinases",
+        "Caspase recruitment domain containing",
+        "PDZ domain containing",
+        "CBM complex"
+    ],
+    "CARS1": [
+        "Aminoacyl tRNA synthetases, Class I"
+    ],
+    "CASP8": [
+        "Caspases",
+        "Death effector domain containing",
+        "Ripoptosome",
+        "Death inducing signaling complex"
+    ],
+    "CASZ1": [
+        "Zinc fingers C2H2-type"
+    ],
+    "CBFA2T3": [
+        "Zinc fingers MYND-type",
+        "A-kinase anchoring proteins"
+    ],
+    "CBFB": [
+        "N/A"
+    ],
+    "CBL": [
+        "Ring finger proteins"
+    ],
+    "CBLB": [
+        "Ring finger proteins"
+    ],
+    "CBLC": [
+        "Ring finger proteins"
+    ],
+    "CCDC6": [
+        "N/A"
+    ],
+    "CCNB1IP1": [
+        "Ring finger proteins",
+        "Small nucleolar RNA protein coding host genes"
+    ],
+    "CCND1": [
+        "Cyclins"
+    ],
+    "CCND2": [
+        "Cyclins"
+    ],
+    "CCND3": [
+        "Cyclins"
+    ],
+    "CCNE1": [
+        "Cyclins"
+    ],
+    "CCR7": [
+        "CD molecules",
+        "C-C motif chemokine receptors"
+    ],
+    "CD58": [
+        "CD molecules",
+        "Ig-like cell adhesion molecule family",
+        "MicroRNA protein coding host genes"
+    ],
+    "CD74": [
+        "CD molecules"
+    ],
+    "CD79A": [
+        "CD molecules",
+        "V-set domain containing"
+    ],
+    "CD79B": [
+        "CD molecules",
+        "V-set domain containing"
+    ],
+    "CD274": [
+        "CD molecules",
+        "Receptor ligands",
+        "V-set domain containing",
+        "C2-set domain containing",
+        "B7 family"
+    ],
+    "CDC73": [
+        "Paf1/RNA polymerase II complex ",
+        "MicroRNA protein coding host genes"
+    ],
+    "CDH1": [
+        "CD molecules",
+        "Type I classical cadherins"
+    ],
+    "CDH10": [
+        "Type II classical cadherins"
+    ],
+    "CDH11": [
+        "Type II classical cadherins"
+    ],
+    "CDK4": [
+        "Cyclin dependent kinases",
+        "MicroRNA protein coding host genes"
+    ],
+    "CDK6": [
+        "Cyclin dependent kinases"
+    ],
+    "CDK12": [
+        "Cyclin dependent kinases"
+    ],
+    "CDKN1A": [
+        "N/A"
+    ],
+    "CDKN1B": [
+        "N/A"
+    ],
+    "CDKN2A": [
+        "N/A"
+    ],
+    "CDKN2C": [
+        "Ankyrin repeat domain containing"
+    ],
+    "CDX2": [
+        "HOXL subclass homeoboxes"
+    ],
+    "CEBPA": [
+        "Basic leucine zipper proteins",
+        "CCAAT/enhancer binding proteins "
+    ],
+    "CHCHD7": [
+        "Coiled-coil-helix-coiled-coil-helix domain containing proteins",
+        "Mitochondrial respiratory chain complex assembly factors"
+    ],
+    "CHD2": [
+        "Helicases",
+        "SNF2 related family",
+        "MicroRNA protein coding host genes"
+    ],
+    "CHD4": [
+        "PHD finger proteins",
+        "SNF2 related family",
+        "NuRD complex subunits",
+        "Small nucleolar RNA protein coding host genes"
+    ],
+    "CHEK2": [
+        "N/A"
+    ],
+    "CIC": [
+        "N/A"
+    ],
+    "CIITA": [
+        "NLR family"
+    ],
+    "CLIP1": [
+        "N/A"
+    ],
+    "CLTC": [
+        "Clathrin subunits"
+    ],
+    "CLTCL1": [
+        "Clathrin subunits"
+    ],
+    "CMTR2": [
+        "7BS 2'O-ribose DNA/RNA methyltransferases"
+    ],
+    "CNBP": [
+        "Zinc fingers CCHC-type"
+    ],
+    "CNOT3": [
+        "CCR4-NOT transcription complex"
+    ],
+    "CNTRL": [
+        "N/A"
+    ],
+    "COL1A1": [
+        "Fibrillar collagens"
+    ],
+    "COL2A1": [
+        "Fibrillar collagens"
+    ],
+    "CPEB3": [
+        "RNA binding motif containing"
+    ],
+    "CR1": [
+        "Blood group antigens",
+        "CD molecules",
+        "Sushi domain containing",
+        "Complement system regulators and receptors"
+    ],
+    "CREB1": [
+        "Basic leucine zipper proteins"
+    ],
+    "CREB3L1": [
+        "CREB3 transcription factor family"
+    ],
+    "CREB3L2": [
+        "CREB3 transcription factor family"
+    ],
+    "CREBBP": [
+        "Zinc fingers ZZ-type",
+        "Lysine acetyltransferases",
+        "Bromodomain containing"
+    ],
+    "CRLF2": [
+        "Fibronectin type III domain containing",
+        "Pseudoautosomal region 1"
+    ],
+    "CRNKL1": [
+        "Spliceosomal B complex",
+        "Spliceosomal Bact complex",
+        "Spliceosomal C complex",
+        "Spliceosomal P complex"
+    ],
+    "CRTC1": [
+        "N/A"
+    ],
+    "CRTC3": [
+        "N/A"
+    ],
+    "CSF3R": [
+        "CD molecules",
+        "Fibronectin type III domain containing"
+    ],
+    "CTCF": [
+        "Zinc fingers C2H2-type",
+        "Cilia and flagella associated"
+    ],
+    "CTNNB1": [
+        "Armadillo repeat containing",
+        "Beta catenins",
+        "Wnt enhanceosome complex"
+    ],
+    "CUL3": [
+        "Cullins"
+    ],
+    "CUX1": [
+        "CUT class homeoboxes and pseudogenes",
+        "Golgins"
+    ],
+    "CXCR4": [
+        "CD molecules",
+        "C-X-C motif chemokine receptors"
+    ],
+    "CYLD": [
+        "Ubiquitin specific peptidases",
+        "MicroRNA protein coding host genes"
+    ],
+    "CYP2C8": [
+        "Cytochrome P450 family 2"
+    ],
+    "CYSLTR2": [
+        "Leukotriene receptors"
+    ],
+    "DAXX": [
+        "N/A"
+    ],
+    "DAZAP1": [
+        "RNA binding motif containing"
+    ],
+    "DCAF12L2": [
+        "WD repeat domain containing"
+    ],
+    "DCC": [
+        "Fibronectin type III domain containing",
+        "I-set domain containing",
+        "MicroRNA protein coding host genes"
+    ],
+    "DCSTAMP": [
+        "N/A"
+    ],
+    "DCTN1": [
+        "Dynactin subunits"
+    ],
+    "DDB2": [
+        "WD repeat domain containing",
+        "Xeroderma pigmentosum complementation groups",
+        "Nucleotide excision repair"
+    ],
+    "DDIT3": [
+        "Basic leucine zipper proteins",
+        "MicroRNA protein coding host genes"
+    ],
+    "DDR2": [
+        "Receptor tyrosine kinases"
+    ],
+    "DDX3X": [
+        "DEAD-box helicases"
+    ],
+    "DDX5": [
+        "DEAD-box helicases",
+        "MicroRNA protein coding host genes"
+    ],
+    "DDX6": [
+        "DEAD-box helicases"
+    ],
+    "DDX10": [
+        "DEAD-box helicases",
+        "SSU processome"
+    ],
+    "DEK": [
+        "B-WICH chromatin-remodelling complex subunits"
+    ],
+    "DGCR8": [
+        "MicroRNA protein coding host genes"
+    ],
+    "DHX9": [
+        "DEAH-box helicases"
+    ],
+    "DICER1": [
+        "Endoribonucleases",
+        "MicroRNA protein coding host genes",
+        "RISC loading complex subunits"
+    ],
+    "DIS3": [
+        "Exosome complex",
+        "Endoribonucleases"
+    ],
+    "DNAJB1": [
+        "DNAJ (HSP40) heat shock proteins"
+    ],
+    "DNM2": [
+        "Pleckstrin homology domain containing",
+        "MicroRNA protein coding host genes"
+    ],
+    "DNMT3A": [
+        "PWWP domain containing",
+        "MicroRNA protein coding host genes",
+        "7BS C5-cytosine DNA/RNA methyltransferases"
+    ],
+    "DOT1L": [
+        "Lysine methyltransferases",
+        "7BS protein lysine methyltransferases"
+    ],
+    "DROSHA": [
+        "Endoribonucleases"
+    ],
+    "DTX1": [
+        "Ring finger proteins"
+    ],
+    "DUSP16": [
+        "MAP kinase phosphatases"
+    ],
+    "EBF1": [
+        "Early B-cell factors",
+        "IPT domain containing"
+    ],
+    "EFTUD2": [
+        "U5 small nuclear ribonucleoprotein",
+        "Spliceosomal Bact complex",
+        "Spliceosomal C complex",
+        "Spliceosomal P complex"
+    ],
+    "EGFR": [
+        "Erb-b2 receptor tyrosine kinases"
+    ],
+    "EGR2": [
+        "Zinc fingers C2H2-type"
+    ],
+    "EHD2": [
+        "EF-hand domain containing"
+    ],
+    "EIF1AX": [
+        "Small nucleolar RNA protein coding host genes"
+    ],
+    "EIF3E": [
+        "Eukaryotic translation initiation factor 3"
+    ],
+    "EIF4A2": [
+        "DEAD-box helicases",
+        "MicroRNA protein coding host genes",
+        "Small nucleolar RNA protein coding host genes"
+    ],
+    "ELF3": [
+        "ETS transcription factor family"
+    ],
+    "ELF4": [
+        "ETS transcription factor family"
+    ],
+    "ELK4": [
+        "ETS transcription factor family"
+    ],
+    "ELL": [
+        "Protein phosphatase 1 regulatory subunits",
+        "Super elongation complex"
+    ],
+    "ELN": [
+        "N/A"
+    ],
+    "EML4": [
+        "WD repeat domain containing",
+        "EMAP like"
+    ],
+    "ENPEP": [
+        "Aminopeptidases",
+        "CD molecules",
+        "M1 metallopeptidases"
+    ],
+    "EP300": [
+        "Zinc fingers ZZ-type",
+        "Lysine acetyltransferases",
+        "Bromodomain containing"
+    ],
+    "EPAS1": [
+        "Basic helix-loop-helix proteins",
+        "PAS domain containing"
+    ],
+    "EPHA2": [
+        "Sterile alpha motif domain containing",
+        "EPH receptors"
+    ],
+    "EPHA3": [
+        "Sterile alpha motif domain containing",
+        "EPH receptors"
+    ],
+    "EPHA7": [
+        "Sterile alpha motif domain containing",
+        "EPH receptors"
+    ],
+    "EPS15": [
+        "EF-hand domain containing"
+    ],
+    "ERBB2": [
+        "CD molecules",
+        "Minor histocompatibility antigens",
+        "Erb-b2 receptor tyrosine kinases",
+        "MicroRNA protein coding host genes"
+    ],
+    "ERBB3": [
+        "Erb-b2 receptor tyrosine kinases"
+    ],
+    "ERBB4": [
+        "Erb-b2 receptor tyrosine kinases",
+        "MicroRNA protein coding host genes"
+    ],
+    "ERC1": [
+        "N/A"
+    ],
+    "ERCC2": [
+        "DEAH-box helicases",
+        "Xeroderma pigmentosum complementation groups",
+        "ERCC excision repair associated",
+        "General transcription factor IIH complex subunits"
+    ],
+    "ERCC3": [
+        "Xeroderma pigmentosum complementation groups",
+        "ERCC excision repair associated",
+        "General transcription factor IIH complex subunits",
+        "DexD/H helicases"
+    ],
+    "ERCC4": [
+        "FA complementation groups",
+        "Xeroderma pigmentosum complementation groups",
+        "ERCC excision repair associated"
+    ],
+    "ERCC5": [
+        "Xeroderma pigmentosum complementation groups",
+        "ERCC excision repair associated"
+    ],
+    "ERG": [
+        "ETS transcription factor family"
+    ],
+    "ESR1": [
+        "Estrogen receptors"
+    ],
+    "ESRRA": [
+        "Estrogen related receptors"
+    ],
+    "ETNK1": [
+        "N/A"
+    ],
+    "ETV1": [
+        "ETS transcription factor family"
+    ],
+    "ETV4": [
+        "ETS transcription factor family"
+    ],
+    "ETV5": [
+        "ETS transcription factor family"
+    ],
+    "ETV6": [
+        "ETS transcription factor family"
+    ],
+    "EWSR1": [
+        "Zinc fingers RANBP2-type",
+        "RNA binding motif containing"
+    ],
+    "EXT1": [
+        "Exostosin glycosyltransferase family"
+    ],
+    "EXT2": [
+        "Exostosin glycosyltransferase family"
+    ],
+    "EZH2": [
+        "Lysine methyltransferases",
+        "Myb/SANT domain containing",
+        "Polycomb repressive complex 2",
+        "SET domain containing"
+    ],
+    "EZR": [
+        "A-kinase anchoring proteins",
+        "FERM domain containing"
+    ],
+    "TENT5C": [
+        "Terminal nucleotidyltransferases"
+    ],
+    "FAM135B": [
+        "N/A"
+    ],
+    "FAM174B": [
+        "N/A"
+    ],
+    "FAM186A": [
+        "N/A"
+    ],
+    "FANCA": [
+        "FA complementation groups",
+        "FA core complex"
+    ],
+    "FANCC": [
+        "FA complementation groups",
+        "FA core complex"
+    ],
+    "FANCD2": [
+        "FA complementation groups",
+        "Armadillo like helical domain containing"
+    ],
+    "FANCE": [
+        "FA complementation groups",
+        "FA core complex"
+    ],
+    "FANCF": [
+        "FA complementation groups",
+        "FA core complex"
+    ],
+    "FANCG": [
+        "FA complementation groups",
+        "FA core complex"
+    ],
+    "FAS": [
+        "CD molecules",
+        "Tumor necrosis factor receptor superfamily",
+        "Death inducing signaling complex"
+    ],
+    "FAT1": [
+        "Cadherin related"
+    ],
+    "FAT2": [
+        "Cadherin related",
+        "MicroRNA protein coding host genes"
+    ],
+    "FAT3": [
+        "Cadherin related"
+    ],
+    "FAT4": [
+        "Cadherin related"
+    ],
+    "FBLN1": [
+        "Fibulins"
+    ],
+    "FBN2": [
+        "Fibrillins"
+    ],
+    "FBXO11": [
+        "F-boxes other",
+        "Ubiquitin protein ligase E3 component n-recognins"
+    ],
+    "FBXW7": [
+        "WD repeat domain containing",
+        "F-box and WD repeat domain containing",
+        "MicroRNA protein coding host genes"
+    ],
+    "FCGR2B": [
+        "CD molecules",
+        "Immunoglobulin like domain containing",
+        "Fc receptors"
+    ],
+    "FCRL4": [
+        "CD molecules",
+        "Immunoglobulin like domain containing",
+        "Fc receptors"
+    ],
+    "FES": [
+        "SH2 domain containing",
+        "F-BAR domain containing",
+        "Fes family tyrosine kinases"
+    ],
+    "FEV": [
+        "ETS transcription factor family"
+    ],
+    "FGD5": [
+        "Zinc fingers FYVE-type",
+        "Pleckstrin homology domain containing",
+        "Dbl family Rho GEFs"
+    ],
+    "FGFR1": [
+        "Receptor tyrosine kinases",
+        "CD molecules",
+        "I-set domain containing"
+    ],
+    "CEP43": [
+        "N/A"
+    ],
+    "FGFR2": [
+        "Receptor tyrosine kinases",
+        "CD molecules",
+        "I-set domain containing"
+    ],
+    "FGFR3": [
+        "Receptor tyrosine kinases",
+        "CD molecules",
+        "I-set domain containing"
+    ],
+    "FGFR4": [
+        "Receptor tyrosine kinases",
+        "CD molecules",
+        "I-set domain containing"
+    ],
+    "FH": [
+        "N/A"
+    ],
+    "FHIT": [
+        "MicroRNA protein coding host genes",
+        "Histidine triad superfamily"
+    ],
+    "FIP1L1": [
+        "Cleavage and polyadenylation specific factor subunits"
+    ],
+    "FLCN": [
+        "DENN domain containing"
+    ],
+    "FLI1": [
+        "ETS transcription factor family"
+    ],
+    "FLT3": [
+        "Receptor tyrosine kinases",
+        "CD molecules",
+        "Immunoglobulin like domain containing"
+    ],
+    "FLT4": [
+        "Receptor tyrosine kinases",
+        "I-set domain containing"
+    ],
+    "FN1": [
+        "Receptor ligands",
+        "Fibronectin type III domain containing"
+    ],
+    "FOXA1": [
+        "Forkhead boxes"
+    ],
+    "FOXA2": [
+        "Forkhead boxes"
+    ],
+    "FOXD4L1": [
+        "Forkhead boxes"
+    ],
+    "FOXL2": [
+        "Forkhead boxes"
+    ],
+    "FOXO1": [
+        "Forkhead boxes"
+    ],
+    "FOXO3": [
+        "Forkhead boxes"
+    ],
+    "FOXO4": [
+        "Forkhead boxes"
+    ],
+    "FOXP1": [
+        "Forkhead boxes",
+        "MicroRNA protein coding host genes"
+    ],
+    "FSTL3": [
+        "N/A"
+    ],
+    "FUBP1": [
+        "N/A"
+    ],
+    "FUS": [
+        "Zinc fingers RANBP2-type",
+        "RNA binding motif containing",
+        "Heterogeneous nuclear ribonucleoproteins"
+    ],
+    "GAS7": [
+        "F-BAR domain containing"
+    ],
+    "GATA1": [
+        "GATA zinc finger domain containing"
+    ],
+    "GATA2": [
+        "GATA zinc finger domain containing"
+    ],
+    "GATA3": [
+        "GATA zinc finger domain containing"
+    ],
+    "GLI1": [
+        "Zinc fingers C2H2-type"
+    ],
+    "GMPS": [
+        "Glutamine amidotransferase class 1 domain containing"
+    ],
+    "GNA11": [
+        "G protein subunits alpha, group q"
+    ],
+    "GNA13": [
+        "G protein subunits alpha, group 12/13"
+    ],
+    "GNAI2": [
+        "G protein subunits alpha, group i",
+        "MicroRNA protein coding host genes"
+    ],
+    "GNAQ": [
+        "G protein subunits alpha, group q"
+    ],
+    "GNAS": [
+        "Granins",
+        "G protein subunits alpha, group s"
+    ],
+    "GOLGA5": [
+        "Golgins"
+    ],
+    "GOPC": [
+        "PDZ domain containing"
+    ],
+    "GPC3": [
+        "Glypicans"
+    ],
+    "GPHN": [
+        "N/A"
+    ],
+    "GRIN2A": [
+        "Glutamate ionotropic receptor NMDA type subunits"
+    ],
+    "GTF2I": [
+        "General transcription factors"
+    ],
+    "H3-3A": [
+        "H3 histones",
+        "Proteins encoded by multiple genes"
+    ],
+    "H3-3B": [
+        "H3 histones",
+        "Proteins encoded by multiple genes"
+    ],
+    "HERC2": [
+        "Zinc fingers ZZ-type",
+        "HECT and RLD domain containing E3 ubiquitin protein ligases"
+    ],
+    "HERPUD1": [
+        "N/A"
+    ],
+    "HEY1": [
+        "Basic helix-loop-helix proteins"
+    ],
+    "HGF": [
+        "N/A"
+    ],
+    "HIF1A": [
+        "Basic helix-loop-helix proteins",
+        "PAS domain containing"
+    ],
+    "HIP1": [
+        "N/A"
+    ],
+    "H3C2": [
+        "H3 histones",
+        "Proteins encoded by multiple genes"
+    ],
+    "H4C9": [
+        "H4 histones",
+        "Proteins encoded by multiple genes"
+    ],
+    "HLA-A": [
+        "Histocompatibility complex",
+        "C1-set domain containing"
+    ],
+    "HLA-B": [
+        "Histocompatibility complex",
+        "C1-set domain containing",
+        "MicroRNA protein coding host genes"
+    ],
+    "HLF": [
+        "PAR bZIP family"
+    ],
+    "HMGA1": [
+        "Canonical high mobility group",
+        "MicroRNA protein coding host genes"
+    ],
+    "HMGA2": [
+        "Canonical high mobility group"
+    ],
+    "HNF1A": [
+        "HNF class homeoboxes"
+    ],
+    "HNRNPA2B1": [
+        "RNA binding motif containing",
+        "Heterogeneous nuclear ribonucleoproteins"
+    ],
+    "HOOK3": [
+        "FHF complex"
+    ],
+    "HOXA9": [
+        "HOXL subclass homeoboxes"
+    ],
+    "HOXA11": [
+        "HOXL subclass homeoboxes"
+    ],
+    "HOXA13": [
+        "HOXL subclass homeoboxes"
+    ],
+    "HOXC11": [
+        "HOXL subclass homeoboxes"
+    ],
+    "HOXC13": [
+        "HOXL subclass homeoboxes"
+    ],
+    "HOXD11": [
+        "HOXL subclass homeoboxes"
+    ],
+    "HOXD13": [
+        "HOXL subclass homeoboxes"
+    ],
+    "HRAS": [
+        "RAS type GTPase family"
+    ],
+    "HSP90AA1": [
+        "Heat shock 90kDa proteins"
+    ],
+    "HSP90AB1": [
+        "Heat shock 90kDa proteins"
+    ],
+    "HSPG2": [
+        "Proteoglycans",
+        "I-set domain containing"
+    ],
+    "HTRA2": [
+        "Serine proteases",
+        "PDZ domain containing"
+    ],
+    "ID3": [
+        "Basic helix-loop-helix proteins"
+    ],
+    "IDH1": [
+        "Isocitrate dehydrogenases"
+    ],
+    "IDH2": [
+        "Isocitrate dehydrogenases"
+    ],
+    "IFNAR1": [
+        "Interferon receptors"
+    ],
+    "IFNGR1": [
+        "CD molecules",
+        "Interferon receptors"
+    ],
+    "IKBKB": [
+        "I kappa B kinases",
+        "IKK complex"
+    ],
+    "IKZF1": [
+        "Zinc fingers C2H2-type",
+        "Protein phosphatase 1 regulatory subunits"
+    ],
+    "IKZF3": [
+        "Zinc fingers C2H2-type"
+    ],
+    "IL2": [
+        "Interleukins"
+    ],
+    "IL6ST": [
+        "CD molecules",
+        "Fibronectin type III domain containing",
+        "Interleukin receptors"
+    ],
+    "IL7R": [
+        "CD molecules",
+        "Fibronectin type III domain containing",
+        "Interleukin receptors"
+    ],
+    "IL21R": [
+        "CD molecules",
+        "Interleukin receptors"
+    ],
+    "ING1": [
+        "PHD finger proteins"
+    ],
+    "INO80": [
+        "INO80 complex",
+        "SNF2 related family",
+        "DexD/H helicases"
+    ],
+    "IRAK1": [
+        "N/A"
+    ],
+    "IRF1": [
+        "Interferon regulatory factors "
+    ],
+    "IRF4": [
+        "Interferon regulatory factors "
+    ],
+    "IRS4": [
+        "N/A"
+    ],
+    "ITK": [
+        "Pleckstrin homology domain containing",
+        "SH2 domain containing",
+        "Tec family tyrosine kinases"
+    ],
+    "JAK1": [
+        "FERM domain containing",
+        "Jak family tyrosine kinases"
+    ],
+    "JAK2": [
+        "SH2 domain containing",
+        "FERM domain containing",
+        "Jak family tyrosine kinases"
+    ],
+    "JAK3": [
+        "Jak family tyrosine kinases"
+    ],
+    "JUN": [
+        "Basic leucine zipper proteins",
+        "Jun transcription factor family"
+    ],
+    "KAT6A": [
+        "Zinc fingers C2HC-type",
+        "PHD finger proteins",
+        "MYST type domain containing lysine acetyltransferases"
+    ],
+    "KAT6B": [
+        "Zinc fingers C2HC-type",
+        "PHD finger proteins",
+        "MYST type domain containing lysine acetyltransferases"
+    ],
+    "KCNJ5": [
+        "Potassium inwardly rectifying channel subfamily J"
+    ],
+    "KDM3B": [
+        "Lysine demethylases"
+    ],
+    "KDM5A": [
+        "PHD finger proteins",
+        "AT-rich interaction domain containing",
+        "Lysine demethylases",
+        "EMSY complex"
+    ],
+    "KDM5C": [
+        "PHD finger proteins",
+        "AT-rich interaction domain containing",
+        "Lysine demethylases",
+        "MicroRNA protein coding host genes"
+    ],
+    "KDM6A": [
+        "Lysine demethylases",
+        "Tetratricopeptide repeat domain containing"
+    ],
+    "KDR": [
+        "Receptor tyrosine kinases",
+        "CD molecules",
+        "V-set domain containing",
+        "I-set domain containing"
+    ],
+    "KDSR": [
+        "Short chain dehydrogenase/reductase superfamily"
+    ],
+    "KEAP1": [
+        "Kelch like",
+        "BTB domain containing"
+    ],
+    "KEL": [
+        "Blood group antigens",
+        "CD molecules",
+        "M13 metallopeptidases"
+    ],
+    "KIF5B": [
+        "Kinesins"
+    ],
+    "KIFC1": [
+        "Kinesins"
+    ],
+    "KIT": [
+        "Receptor tyrosine kinases",
+        "CD molecules",
+        "Immunoglobulin like domain containing"
+    ],
+    "KLF4": [
+        "Zinc fingers C2H2-type",
+        "KLF transcription factors"
+    ],
+    "KLF5": [
+        "Zinc fingers C2H2-type",
+        "KLF transcription factors"
+    ],
+    "KLF6": [
+        "Zinc fingers C2H2-type",
+        "KLF transcription factors"
+    ],
+    "KLHL6": [
+        "Kelch like",
+        "BTB domain containing"
+    ],
+    "KLHL36": [
+        "Kelch like",
+        "BTB domain containing"
+    ],
+    "KLK2": [
+        "Kallikreins"
+    ],
+    "KMT2A": [
+        "PHD finger proteins",
+        "Zinc fingers CXXC-type",
+        "Lysine methyltransferases",
+        "Bromodomain containing",
+        "SET domain containing"
+    ],
+    "KMT2B": [
+        "PHD finger proteins",
+        "Zinc fingers CXXC-type",
+        "Lysine methyltransferases",
+        "SET domain containing"
+    ],
+    "KMT2C": [
+        "PHD finger proteins",
+        "Lysine methyltransferases",
+        "SET domain containing"
+    ],
+    "KMT2D": [
+        "PHD finger proteins",
+        "Lysine methyltransferases",
+        "SET domain containing"
+    ],
+    "KNL1": [
+        "Protein phosphatase 1 regulatory subunits",
+        "KNL1 complex"
+    ],
+    "KRAS": [
+        "RAS type GTPase family"
+    ],
+    "KTN1": [
+        "N/A"
+    ],
+    "LASP1": [
+        "LIM domain containing",
+        "MicroRNA protein coding host genes",
+        "Nebulin family"
+    ],
+    "LATS1": [
+        "AGC family kinases"
+    ],
+    "LATS2": [
+        "AGC family kinases"
+    ],
+    "LCK": [
+        "SH2 domain containing",
+        "Src family tyrosine kinases"
+    ],
+    "LDB1": [
+        "Wnt enhanceosome complex"
+    ],
+    "LEF1": [
+        "TCF/LEF transcription factor family",
+        "Wnt enhanceosome complex"
+    ],
+    "LIFR": [
+        "CD molecules",
+        "Fibronectin type III domain containing",
+        "MicroRNA protein coding host genes"
+    ],
+    "LMNA": [
+        "Lamins"
+    ],
+    "LMO1": [
+        "LIM domain containing"
+    ],
+    "LMO2": [
+        "LIM domain containing"
+    ],
+    "LOX": [
+        "N/A"
+    ],
+    "LPAR4": [
+        "Lysophosphatidic acid receptors"
+    ],
+    "LPP": [
+        "Zyxin family",
+        "MicroRNA protein coding host genes"
+    ],
+    "LRIG3": [
+        "I-set domain containing"
+    ],
+    "LRP1B": [
+        "Low density lipoprotein receptors"
+    ],
+    "LTB": [
+        "Tumor necrosis factor superfamily"
+    ],
+    "LY75-CD302": [
+        "N/A"
+    ],
+    "LYL1": [
+        "Basic helix-loop-helix proteins"
+    ],
+    "LZTR1": [
+        "BTB domain containing"
+    ],
+    "MAF": [
+        "Large MAF bZIP transcription factor family"
+    ],
+    "MAFB": [
+        "Large MAF bZIP transcription factor family"
+    ],
+    "MALT1": [
+        "Immunoglobulin like domain containing",
+        "CBM complex"
+    ],
+    "MAML2": [
+        "N/A"
+    ],
+    "MAP2": [
+        "A-kinase anchoring proteins"
+    ],
+    "MAP2K1": [
+        "Mitogen-activated protein kinase kinases"
+    ],
+    "MAP2K2": [
+        "Mitogen-activated protein kinase kinases"
+    ],
+    "MAP2K4": [
+        "Mitogen-activated protein kinase kinases",
+        "MicroRNA protein coding host genes"
+    ],
+    "MAP2K7": [
+        "Mitogen-activated protein kinase kinases"
+    ],
+    "MAP3K1": [
+        "Ring finger proteins",
+        "Zinc fingers SWIM-type",
+        "Mitogen-activated protein kinase kinase kinases"
+    ],
+    "MAP3K13": [
+        "Mitogen-activated protein kinase kinase kinases"
+    ],
+    "MAPK1": [
+        "Mitogen-activated protein kinases"
+    ],
+    "MARK2": [
+        "Microtubule affinity regulating kinases"
+    ],
+    "MAX": [
+        "Basic helix-loop-helix proteins"
+    ],
+    "MB21D2": [
+        "N/A"
+    ],
+    "MCM3AP": [
+        "Lysine acetyltransferases",
+        "Transcription and export complex 2"
+    ],
+    "MDM2": [
+        "Ring finger proteins",
+        "Zinc fingers RANBP2-type"
+    ],
+    "MDM4": [
+        "Ring finger proteins",
+        "Zinc fingers RANBP2-type"
+    ],
+    "MECOM": [
+        "Zinc fingers C2H2-type",
+        "Lysine methyltransferases",
+        "PR/SET domain family"
+    ],
+    "MED12": [
+        "Mediator complex"
+    ],
+    "MEF2B": [
+        "Myocyte enhancer factor 2 proteins",
+        "MADS box family"
+    ],
+    "MEN1": [
+        "N/A"
+    ],
+    "MET": [
+        "Receptor tyrosine kinases",
+        "IPT domain containing"
+    ],
+    "MGA": [
+        "MAX dimerization proteins",
+        "T-box transcription factors",
+        "MicroRNA protein coding host genes"
+    ],
+    "MITF": [
+        "Basic helix-loop-helix proteins"
+    ],
+    "MRTFA": [
+        "Myocardin family"
+    ],
+    "MLF1": [
+        "N/A"
+    ],
+    "MLH1": [
+        "MutL homologs"
+    ],
+    "MLLT1": [
+        "Super elongation complex",
+        "YEATS domain containing"
+    ],
+    "MLLT3": [
+        "Super elongation complex",
+        "YEATS domain containing",
+        "MicroRNA protein coding host genes"
+    ],
+    "MLLT6": [
+        "PHD finger proteins",
+        "MicroRNA protein coding host genes"
+    ],
+    "MLLT10": [
+        "PHD finger proteins"
+    ],
+    "MLLT11": [
+        "N/A"
+    ],
+    "MN1": [
+        "N/A"
+    ],
+    "MPL": [
+        "CD molecules",
+        "Fibronectin type III domain containing"
+    ],
+    "MSH2": [
+        "MutS homologs"
+    ],
+    "MSH6": [
+        "MutS homologs",
+        "PWWP domain containing"
+    ],
+    "MSI2": [
+        "RNA binding motif containing"
+    ],
+    "MSN": [
+        "FERM domain containing"
+    ],
+    "MTCP1": [
+        "N/A"
+    ],
+    "MTOR": [
+        "MTOR complex 1",
+        "MTOR complex 2",
+        "Armadillo like helical domain containing"
+    ],
+    "MUC1": [
+        "CD molecules",
+        "Mucins"
+    ],
+    "MUTYH": [
+        "DNA glycosylases"
+    ],
+    "MYB": [
+        "Myb/SANT domain containing"
+    ],
+    "MYC": [
+        "Basic helix-loop-helix proteins"
+    ],
+    "MYCL": [
+        "Basic helix-loop-helix proteins"
+    ],
+    "MYCN": [
+        "Basic helix-loop-helix proteins"
+    ],
+    "MYD88": [
+        "TIR domain containing",
+        "My-T-BRC complex"
+    ],
+    "MYH9": [
+        "Myosin heavy chains, class II",
+        "MicroRNA protein coding host genes"
+    ],
+    "MYH11": [
+        "Myosin heavy chains, class II"
+    ],
+    "MYO5A": [
+        "Myosin heavy chains, class V"
+    ],
+    "MYOD1": [
+        "Basic helix-loop-helix proteins",
+        "Myogenic regulatory family"
+    ],
+    "NAB2": [
+        "N/A"
+    ],
+    "NBEA": [
+        "WD repeat domain containing",
+        "A-kinase anchoring proteins",
+        "BEACH domain containing ",
+        "Armadillo like helical domain containing"
+    ],
+    "NBN": [
+        "BRCA1 C complex",
+        "MRN complex"
+    ],
+    "NCOA1": [
+        "Basic helix-loop-helix proteins",
+        "Lysine acetyltransferases",
+        "PAS domain containing"
+    ],
+    "NCOA2": [
+        "Basic helix-loop-helix proteins",
+        "Lysine acetyltransferases",
+        "PAS domain containing"
+    ],
+    "NCOA4": [
+        "N/A"
+    ],
+    "NCOR1": [
+        "Myb/SANT domain containing",
+        "Protein phosphatase 1 regulatory subunits",
+        "NCoR/SMRT transcriptional repression complex subunits"
+    ],
+    "NCOR2": [
+        "Myb/SANT domain containing",
+        "NCoR/SMRT transcriptional repression complex subunits"
+    ],
+    "NDRG1": [
+        "NDRG family"
+    ],
+    "NEFH": [
+        "Intermediate filaments Type IV"
+    ],
+    "NF1": [
+        "Armadillo like helical domain containing"
+    ],
+    "NF2": [
+        "A-kinase anchoring proteins",
+        "FERM domain containing"
+    ],
+    "NFATC2": [
+        "Nuclear factors of activated T-cells",
+        "MicroRNA protein coding host genes",
+        "IPT domain containing"
+    ],
+    "NFE2L2": [
+        "Basic leucine zipper proteins",
+        "MicroRNA protein coding host genes"
+    ],
+    "NFIB": [
+        "Nuclear factor I family"
+    ],
+    "NFKB2": [
+        "Ankyrin repeat domain containing",
+        "NF-kappa B complex subunits",
+        "IPT domain containing"
+    ],
+    "NFKBIA": [
+        "Ankyrin repeat domain containing"
+    ],
+    "NFKBIE": [
+        "Ankyrin repeat domain containing"
+    ],
+    "NIN": [
+        "EF-hand domain containing"
+    ],
+    "NIPBL": [
+        "Armadillo like helical domain containing"
+    ],
+    "NKTR": [
+        "Cyclophilin peptidylprolyl isomerases"
+    ],
+    "NKX2-1": [
+        "NKL subclass homeoboxes and pseudogenes"
+    ],
+    "NONO": [
+        "Protein phosphatase 1 regulatory subunits",
+        "RNA binding motif containing"
+    ],
+    "NOTCH1": [
+        "Notch receptors",
+        "MicroRNA protein coding host genes"
+    ],
+    "NOTCH2": [
+        "Notch receptors"
+    ],
+    "NPEPPS": [
+        "Aminopeptidases",
+        "M1 metallopeptidases"
+    ],
+    "NPM1": [
+        "N/A"
+    ],
+    "NPRL2": [
+        "GATOR1 subcomplex"
+    ],
+    "NR4A3": [
+        "Nuclear receptor subfamily 4 group A"
+    ],
+    "NRAS": [
+        "RAS type GTPase family"
+    ],
+    "NRG1": [
+        "I-set domain containing",
+        "Neuregulins"
+    ],
+    "NRK": [
+        "N/A"
+    ],
+    "NRP1": [
+        "CD molecules"
+    ],
+    "NSD1": [
+        "PHD finger proteins",
+        "Lysine methyltransferases",
+        "PWWP domain containing"
+    ],
+    "NSD2": [
+        "PHD finger proteins",
+        "Lysine methyltransferases",
+        "PWWP domain containing",
+        "SET domain containing"
+    ],
+    "NSD3": [
+        "PHD finger proteins",
+        "Lysine methyltransferases",
+        "PWWP domain containing",
+        "SET domain containing"
+    ],
+    "NT5C2": [
+        "5'-nucleotidases"
+    ],
+    "NT5C3A": [
+        "5'-nucleotidases"
+    ],
+    "NTRK1": [
+        "Receptor tyrosine kinases",
+        "Immunoglobulin like domain containing"
+    ],
+    "NTRK3": [
+        "Receptor tyrosine kinases",
+        "I-set domain containing"
+    ],
+    "NUMA1": [
+        "MicroRNA protein coding host genes"
+    ],
+    "NUP98": [
+        "Nucleoporins"
+    ],
+    "NUP214": [
+        "Nucleoporins"
+    ],
+    "NUTM1": [
+        "N/A"
+    ],
+    "NUTM2B": [
+        "N/A"
+    ],
+    "NUTM2D": [
+        "N/A"
+    ],
+    "NXF1": [
+        "MicroRNA protein coding host genes"
+    ],
+    "OLIG2": [
+        "Basic helix-loop-helix proteins"
+    ],
+    "P2RY8": [
+        "G protein-coupled receptors, Class A orphans",
+        "Pseudoautosomal region 1"
+    ],
+    "PABPC1": [
+        "RNA binding motif containing",
+        "MicroRNA protein coding host genes"
+    ],
+    "PAFAH1B2": [
+        "N/A"
+    ],
+    "PAK2": [
+        "N/A"
+    ],
+    "PALB2": [
+        "WD repeat domain containing",
+        "FA complementation groups"
+    ],
+    "PARP4": [
+        "Poly(ADP-ribose) polymerases"
+    ],
+    "PATZ1": [
+        "Zinc fingers C2H2-type",
+        "BTB domain containing"
+    ],
+    "PAX3": [
+        "PRD class homeoboxes and pseudogenes",
+        "Paired boxes"
+    ],
+    "PAX5": [
+        "PRD class homeoboxes and pseudogenes",
+        "Paired boxes",
+        "MicroRNA protein coding host genes"
+    ],
+    "PAX7": [
+        "PRD class homeoboxes and pseudogenes",
+        "Paired boxes"
+    ],
+    "PAX8": [
+        "PRD class homeoboxes and pseudogenes",
+        "Paired boxes"
+    ],
+    "PBRM1": [
+        "Bromodomain containing",
+        "PBAF complex subunits"
+    ],
+    "PBX1": [
+        "TALE class homeoboxes and pseudogenes"
+    ],
+    "PCBP1": [
+        "Heterogeneous nuclear ribonucleoproteins"
+    ],
+    "PCDH17": [
+        "Non-clustered protocadherins"
+    ],
+    "PCM1": [
+        "N/A"
+    ],
+    "PCMTD1": [
+        "7BS protein methyltransferases"
+    ],
+    "PDCD1LG2": [
+        "CD molecules",
+        "Receptor ligands",
+        "Immunoglobulin like domain containing",
+        "B7 family"
+    ],
+    "PDE4DIP": [
+        "N/A"
+    ],
+    "PDGFB": [
+        "N/A"
+    ],
+    "PDGFRA": [
+        "Receptor tyrosine kinases",
+        "CD molecules",
+        "I-set domain containing"
+    ],
+    "PDGFRB": [
+        "Receptor tyrosine kinases",
+        "CD molecules",
+        "I-set domain containing"
+    ],
+    "PDPR": [
+        "N/A"
+    ],
+    "PEG3": [
+        "Zinc fingers C2H2-type",
+        "SCAN domain containing"
+    ],
+    "PER1": [
+        "MicroRNA protein coding host genes",
+        "PAS domain containing"
+    ],
+    "PHF6": [
+        "PHD finger proteins"
+    ],
+    "PHOX2B": [
+        "PRD class homeoboxes and pseudogenes"
+    ],
+    "PICALM": [
+        "N/A"
+    ],
+    "PIK3CA": [
+        "Phosphatidylinositol 3-kinase subunits"
+    ],
+    "PIK3CB": [
+        "Phosphatidylinositol 3-kinase subunits"
+    ],
+    "PIK3R1": [
+        "SH2 domain containing"
+    ],
+    "PIM1": [
+        "N/A"
+    ],
+    "PLAG1": [
+        "Zinc fingers C2H2-type"
+    ],
+    "PLCB4": [
+        "Phospholipases",
+        "C2 domain containing phospholipases"
+    ],
+    "PLCG1": [
+        "Phospholipases",
+        "Pleckstrin homology domain containing",
+        "SH2 domain containing",
+        "C2 domain containing phospholipases",
+        "EF-hand domain containing",
+        "MicroRNA protein coding host genes"
+    ],
+    "PML": [
+        "Ring finger proteins",
+        "Tripartite motif family"
+    ],
+    "PMS2": [
+        "MutL homologs"
+    ],
+    "POLD1": [
+        "DNA polymerases"
+    ],
+    "POLE": [
+        "DNA polymerases"
+    ],
+    "POLQ": [
+        "DNA polymerases"
+    ],
+    "POT1": [
+        "Shelterin complex"
+    ],
+    "POU2AF1": [
+        "N/A"
+    ],
+    "POU2F2": [
+        "POU class homeoboxes and pseudogenes",
+        "MicroRNA protein coding host genes"
+    ],
+    "POU5F1": [
+        "POU class homeoboxes and pseudogenes"
+    ],
+    "PPARG": [
+        "Peroxisome proliferator activated receptors"
+    ],
+    "PPFIBP1": [
+        "Sterile alpha motif domain containing"
+    ],
+    "PPM1D": [
+        "Protein phosphatases, Mg2+/Mn2+ dependent"
+    ],
+    "PPP2R1A": [
+        "Protein phosphatase 2 scaffold subunits",
+        "STRIPAK complex",
+        "Armadillo like helical domain containing",
+        "MicroRNA protein coding host genes"
+    ],
+    "PPP3CA": [
+        "Protein phosphatase catalytic subunits",
+        "MicroRNA protein coding host genes"
+    ],
+    "PPP6C": [
+        "Protein phosphatase catalytic subunits"
+    ],
+    "PPT2": [
+        "N/A"
+    ],
+    "PRCC": [
+        "Spliceosomal Bact complex"
+    ],
+    "PRDM1": [
+        "Zinc fingers C2H2-type",
+        "PR/SET domain family"
+    ],
+    "PRDM2": [
+        "Zinc fingers C2H2-type",
+        "Lysine methyltransferases",
+        "PR/SET domain family"
+    ],
+    "PRDM16": [
+        "Zinc fingers C2H2-type",
+        "Lysine methyltransferases",
+        "PR/SET domain family",
+        "MicroRNA protein coding host genes"
+    ],
+    "PREX2": [
+        "Protein phosphatase 1 regulatory subunits",
+        "Dbl family Rho GEFs",
+        "PDZ domain containing",
+        "DEP domain containing"
+    ],
+    "PRF1": [
+        "C2 domain containing"
+    ],
+    "PRKACA": [
+        "AGC family kinases",
+        "Protein kinase A subunits"
+    ],
+    "PRKAR1A": [
+        "Protein kinase A subunits"
+    ],
+    "PRKCB": [
+        "C2 domain containing protein kinases",
+        "AGC family kinases",
+        "MicroRNA protein coding host genes"
+    ],
+    "PRKCD": [
+        "C2 domain containing protein kinases",
+        "AGC family kinases"
+    ],
+    "PRKD2": [
+        "Pleckstrin homology domain containing",
+        "MicroRNA protein coding host genes"
+    ],
+    "PRR14": [
+        "N/A"
+    ],
+    "PRRX1": [
+        "PRD class homeoboxes and pseudogenes"
+    ],
+    "PSIP1": [
+        "Heparin binding growth factor family"
+    ],
+    "PTCH1": [
+        "N/A"
+    ],
+    "PTEN": [
+        "C2 tensin-type domain containing",
+        "PTEN protein phosphatases",
+        "Phosphoinositide phosphatases"
+    ],
+    "PTK6": [
+        "SH2 domain containing",
+        "PTK6 family tyrosine kinases"
+    ],
+    "PTMA": [
+        "MicroRNA protein coding host genes"
+    ],
+    "PTPN6": [
+        "SH2 domain containing",
+        "Protein tyrosine phosphatases non-receptor type"
+    ],
+    "PTPN11": [
+        "SH2 domain containing",
+        "Protein tyrosine phosphatases non-receptor type"
+    ],
+    "PTPN13": [
+        "Protein tyrosine phosphatases non-receptor type",
+        "PDZ domain containing",
+        "FERM domain containing"
+    ],
+    "PTPN14": [
+        "Protein tyrosine phosphatases non-receptor type",
+        "FERM domain containing"
+    ],
+    "PTPRB": [
+        "Fibronectin type III domain containing",
+        "Protein tyrosine phosphatases receptor type"
+    ],
+    "PTPRC": [
+        "CD molecules",
+        "Fibronectin type III domain containing",
+        "Protein tyrosine phosphatases receptor type"
+    ],
+    "PTPRD": [
+        "Fibronectin type III domain containing",
+        "I-set domain containing",
+        "Protein tyrosine phosphatases receptor type",
+        "LAR (PTPRF) protein receptor tyrosine phosphatase family "
+    ],
+    "PTPRK": [
+        "Fibronectin type III domain containing",
+        "Immunoglobulin like domain containing",
+        "Protein tyrosine phosphatases receptor type"
+    ],
+    "PTPRT": [
+        "Fibronectin type III domain containing",
+        "Immunoglobulin like domain containing",
+        "Protein tyrosine phosphatases receptor type"
+    ],
+    "QKI": [
+        "N/A"
+    ],
+    "RABEP1": [
+        "N/A"
+    ],
+    "RAC1": [
+        "Rho family GTPases",
+        "Receptor ligands"
+    ],
+    "RAD21": [
+        "Cohesin complex",
+        "Kleisins",
+        "MicroRNA protein coding host genes"
+    ],
+    "RAD51B": [
+        "N/A"
+    ],
+    "RAF1": [
+        "Mitogen-activated protein kinase kinase kinases",
+        "RAF family"
+    ],
+    "RALGDS": [
+        "N/A"
+    ],
+    "RANBP2": [
+        "Zinc fingers RANBP2-type",
+        "Tetratricopeptide repeat domain containing",
+        "Cyclophilin peptidylprolyl isomerases",
+        "Nucleoporins"
+    ],
+    "RAP1GDS1": [
+        "Armadillo repeat containing"
+    ],
+    "RARA": [
+        "Retinoic acid receptors"
+    ],
+    "RASA1": [
+        "Pleckstrin homology domain containing",
+        "SH2 domain containing",
+        "C2 and RasGAP domain containing"
+    ],
+    "RASA2": [
+        "Pleckstrin homology domain containing",
+        "C2 and RasGAP domain containing"
+    ],
+    "RB1": [
+        "Receptor ligands"
+    ],
+    "RBFOX1": [
+        "RNA binding motif containing",
+        "MicroRNA protein coding host genes",
+        "RNA binding fox-1 homologs"
+    ],
+    "RBFOX2": [
+        "RNA binding motif containing",
+        "RNA binding fox-1 homologs"
+    ],
+    "RBM10": [
+        "Zinc fingers C2H2-type",
+        "Zinc fingers RANBP2-type",
+        "G-patch domain containing",
+        "RNA binding motif containing",
+        "Spliceosomal A complex"
+    ],
+    "RBM15": [
+        "RNA binding motif containing",
+        "WTAP complex"
+    ],
+    "RBM38": [
+        "RNA binding motif containing"
+    ],
+    "RBM39": [
+        "RNA binding motif containing"
+    ],
+    "RECQL4": [
+        "RecQ like helicases"
+    ],
+    "REL": [
+        "NF-kappa B complex subunits",
+        "IPT domain containing"
+    ],
+    "RELA": [
+        "NF-kappa B complex subunits",
+        "IPT domain containing"
+    ],
+    "RET": [
+        "Cadherin related",
+        "Receptor tyrosine kinases"
+    ],
+    "RGL3": [
+        "N/A"
+    ],
+    "RGPD3": [
+        "Tetratricopeptide repeat domain containing"
+    ],
+    "RGS7": [
+        "Regulators of G-protein signaling",
+        "DEP domain containing"
+    ],
+    "RHOA": [
+        "Rho family GTPases"
+    ],
+    "RHOH": [
+        "Rho family GTPases"
+    ],
+    "RHPN2": [
+        "PDZ domain containing"
+    ],
+    "RIPK1": [
+        "Ripoptosome"
+    ],
+    "RMI2": [
+        "N/A"
+    ],
+    "RNF6": [
+        "Ring finger proteins"
+    ],
+    "RNF43": [
+        "Ring finger proteins"
+    ],
+    "RNF213": [
+        "Ring finger proteins"
+    ],
+    "ROS1": [
+        "Receptor tyrosine kinases",
+        "Fibronectin type III domain containing"
+    ],
+    "RPL5": [
+        "Protein phosphatase 1 regulatory subunits",
+        "L ribosomal proteins",
+        "Small nucleolar RNA protein coding host genes"
+    ],
+    "RPL10": [
+        "L ribosomal proteins",
+        "Small nucleolar RNA protein coding host genes"
+    ],
+    "RPL22": [
+        "L ribosomal proteins"
+    ],
+    "RPN1": [
+        "Oligosaccharyltransferase complex subunits"
+    ],
+    "RPS3A": [
+        "S ribosomal proteins",
+        "Small nucleolar RNA protein coding host genes"
+    ],
+    "RPS6KA3": [
+        "MAPK activated protein kinases",
+        "AGC family kinases"
+    ],
+    "RRAGC": [
+        "Ras related GTP binding proteins"
+    ],
+    "RRAS2": [
+        "RAS type GTPase family"
+    ],
+    "RSPH10B2": [
+        "Axonemal radial spoke subunits"
+    ],
+    "RSPO2": [
+        "R-spondin family"
+    ],
+    "RSPO3": [
+        "R-spondin family"
+    ],
+    "RUNX1": [
+        "Runt-related transcription factors"
+    ],
+    "RUNX1T1": [
+        "Zinc fingers MYND-type"
+    ],
+    "RXRA": [
+        "MicroRNA protein coding host genes",
+        "Retinoid X receptors"
+    ],
+    "SALL4": [
+        "Zinc fingers C2H2-type"
+    ],
+    "SATB1": [
+        "CUT class homeoboxes and pseudogenes"
+    ],
+    "SBDS": [
+        "Ribosomal biogenesis factors"
+    ],
+    "SDC4": [
+        "Syndecans"
+    ],
+    "SDHA": [
+        "Mitochondrial complex II: succinate dehydrogenase subunits",
+        "Flavoproteins"
+    ],
+    "SDHAF2": [
+        "Mitochondrial respiratory chain complex assembly factors"
+    ],
+    "SDHB": [
+        "Mitochondrial complex II: succinate dehydrogenase subunits"
+    ],
+    "SDHC": [
+        "Mitochondrial complex II: succinate dehydrogenase subunits"
+    ],
+    "SDHD": [
+        "Mitochondrial complex II: succinate dehydrogenase subunits"
+    ],
+    "SEPTIN9": [
+        "Septins"
+    ],
+    "SET": [
+        "INHAT complex",
+        "SET complex",
+        "Nucleosome assembly protein superfamily"
+    ],
+    "SETBP1": [
+        "N/A"
+    ],
+    "SETD1B": [
+        "Lysine methyltransferases",
+        "RNA binding motif containing",
+        "SET domain containing"
+    ],
+    "SETD2": [
+        "Lysine methyltransferases",
+        "SET domain containing"
+    ],
+    "SETDB1": [
+        "Lysine methyltransferases",
+        "Tudor domain containing",
+        "Methyl-CpG binding domain containing",
+        "SET domain containing"
+    ],
+    "SF3B1": [
+        "Armadillo like helical domain containing",
+        "SF3b complex",
+        "B-WICH chromatin-remodelling complex subunits"
+    ],
+    "SFMBT2": [
+        "Sterile alpha motif domain containing",
+        "MBT domain containing"
+    ],
+    "SFPQ": [
+        "Protein phosphatase 1 regulatory subunits",
+        "RNA binding motif containing"
+    ],
+    "SFRP4": [
+        "Secreted frizzled-related proteins"
+    ],
+    "SGK1": [
+        "N/A"
+    ],
+    "SH2B3": [
+        "Pleckstrin homology domain containing",
+        "SH2 domain containing"
+    ],
+    "SH3GL1": [
+        "N-BAR domain containing"
+    ],
+    "SIN3A": [
+        "EMSY complex",
+        "SIN3 histone deacetylase complex subunits"
+    ],
+    "SIRPA": [
+        "CD molecules",
+        "V-set domain containing",
+        "C1-set domain containing",
+        "Signal regulatory proteins",
+        "Ig-like cell adhesion molecule family"
+    ],
+    "SIX1": [
+        "SINE class homeoboxes"
+    ],
+    "SLC34A2": [
+        "Solute carrier family 34"
+    ],
+    "SLC45A3": [
+        "Solute carrier family 45"
+    ],
+    "SMAD2": [
+        "SMAD family"
+    ],
+    "SMAD3": [
+        "SMAD family"
+    ],
+    "SMAD4": [
+        "SMAD family"
+    ],
+    "SMARCA1": [
+        "Myb/SANT domain containing",
+        "SNF2 related family",
+        "NURF complex",
+        "CERF complex"
+    ],
+    "SMARCA4": [
+        "SNF2 related family",
+        "Bromodomain containing",
+        "BAF complex subunits",
+        "PBAF complex subunits",
+        "GBAF complex subunits"
+    ],
+    "SMARCB1": [
+        "Protein phosphatase 1 regulatory subunits",
+        "BAF complex subunits",
+        "PBAF complex subunits"
+    ],
+    "SMARCD1": [
+        "BAF complex subunits",
+        "PBAF complex subunits",
+        "GBAF complex subunits"
+    ],
+    "SMARCE1": [
+        "BAF complex subunits",
+        "PBAF complex subunits"
+    ],
+    "SMC1A": [
+        "Structural maintenance of chromosomes proteins",
+        "Cohesin complex",
+        "MicroRNA protein coding host genes"
+    ],
+    "SMO": [
+        "G protein-coupled receptors, Class F frizzled"
+    ],
+    "SND1": [
+        "Tudor domain containing",
+        "MicroRNA protein coding host genes",
+        "RISC loading complex subunits"
+    ],
+    "SOCS1": [
+        "SH2 domain containing",
+        "Suppressors of cytokine signaling"
+    ],
+    "SOHLH2": [
+        "Basic helix-loop-helix proteins"
+    ],
+    "SOS1": [
+        "Pleckstrin homology domain containing",
+        "Dbl family Rho GEFs"
+    ],
+    "SOX2": [
+        "SRY-box transcription factors"
+    ],
+    "SOX9": [
+        "SRY-box transcription factors"
+    ],
+    "SOX17": [
+        "SRY-box transcription factors"
+    ],
+    "SOX21": [
+        "SRY-box transcription factors"
+    ],
+    "SP140": [
+        "PHD finger proteins",
+        "Bromodomain containing"
+    ],
+    "SPEN": [
+        "RNA binding motif containing"
+    ],
+    "SPOP": [
+        "BTB domain containing"
+    ],
+    "SRC": [
+        "SH2 domain containing",
+        "Src family tyrosine kinases"
+    ],
+    "SRGAP3": [
+        "F-BAR domain containing",
+        "AH/BAR family Rho GTPase activating proteins"
+    ],
+    "SRSF2": [
+        "RNA binding motif containing",
+        "Serine and arginine rich splicing factors",
+        "MicroRNA protein coding host genes"
+    ],
+    "SRSF3": [
+        "RNA binding motif containing",
+        "Serine and arginine rich splicing factors"
+    ],
+    "SS18": [
+        "BAF complex subunits",
+        "GBAF complex subunits"
+    ],
+    "SS18L1": [
+        "BAF complex subunits"
+    ],
+    "SSX1": [
+        "SSX family"
+    ],
+    "SSX2": [
+        "SSX family",
+        "Proteins encoded by multiple genes"
+    ],
+    "SSX4": [
+        "SSX family",
+        "Proteins encoded by multiple genes"
+    ],
+    "STAG2": [
+        "Cohesin complex",
+        "Armadillo like helical domain containing",
+        "STAG family cohesin complex components"
+    ],
+    "STAT3": [
+        "SH2 domain containing"
+    ],
+    "STAT5B": [
+        "SH2 domain containing"
+    ],
+    "STAT6": [
+        "SH2 domain containing"
+    ],
+    "STIL": [
+        "N/A"
+    ],
+    "STK11": [
+        "N/A"
+    ],
+    "STRN": [
+        "WD repeat domain containing",
+        "Protein phosphatase 2 regulatory subunits",
+        "STRIPAK complex"
+    ],
+    "SUFU": [
+        "N/A"
+    ],
+    "SUSD2": [
+        "Sushi domain containing"
+    ],
+    "SUZ12": [
+        "Zinc fingers C2H2-type",
+        "Polycomb repressive complex 2"
+    ],
+    "SYK": [
+        "SH2 domain containing",
+        "Syk family tyrosine kinases"
+    ],
+    "TAF15": [
+        "Zinc fingers RANBP2-type",
+        "RNA binding motif containing"
+    ],
+    "TAL1": [
+        "Basic helix-loop-helix proteins"
+    ],
+    "TAL2": [
+        "Basic helix-loop-helix proteins"
+    ],
+    "TBL1XR1": [
+        "WD repeat domain containing",
+        "NCoR/SMRT transcriptional repression complex subunits"
+    ],
+    "TBX3": [
+        "T-box transcription factors"
+    ],
+    "TCEA1": [
+        "General transcription factors"
+    ],
+    "TCF3": [
+        "Basic helix-loop-helix proteins"
+    ],
+    "TCF4": [
+        "Basic helix-loop-helix proteins"
+    ],
+    "TCF7L2": [
+        "TCF/LEF transcription factor family",
+        "Wnt enhanceosome complex"
+    ],
+    "TCF12": [
+        "Basic helix-loop-helix proteins"
+    ],
+    "TCIRG1": [
+        "V-type ATPase subunits",
+        "MicroRNA protein coding host genes"
+    ],
+    "TCL1A": [
+        "N/A"
+    ],
+    "TEC": [
+        "Pleckstrin homology domain containing",
+        "SH2 domain containing",
+        "Tec family tyrosine kinases"
+    ],
+    "TERT": [
+        "N/A"
+    ],
+    "TET1": [
+        "Zinc fingers CXXC-type",
+        "Tet methylcytosine dioxygenase family"
+    ],
+    "TET2": [
+        "Tet methylcytosine dioxygenase family"
+    ],
+    "TFAP4": [
+        "Basic helix-loop-helix proteins"
+    ],
+    "TFE3": [
+        "Basic helix-loop-helix proteins"
+    ],
+    "TFEB": [
+        "Basic helix-loop-helix proteins"
+    ],
+    "TFG": [
+        "N/A"
+    ],
+    "TGFBR2": [
+        "Type 2 receptor serine/threonine kinases"
+    ],
+    "TGIF1": [
+        "TALE class homeoboxes and pseudogenes"
+    ],
+    "TLL1": [
+        "Astacins"
+    ],
+    "TLX1": [
+        "NKL subclass homeoboxes and pseudogenes"
+    ],
+    "TLX3": [
+        "NKL subclass homeoboxes and pseudogenes"
+    ],
+    "TMEM127": [
+        "N/A"
+    ],
+    "TMPRSS2": [
+        "Scavenger receptor cysteine rich domain containing",
+        "Type II transmembrane serine proteases"
+    ],
+    "TNC": [
+        "Tenascins"
+    ],
+    "TNFAIP3": [
+        "OTU domain containing",
+        "Zinc fingers A20-type"
+    ],
+    "TNFRSF14": [
+        "CD molecules",
+        "Tumor necrosis factor receptor superfamily"
+    ],
+    "TNFRSF17": [
+        "CD molecules",
+        "Tumor necrosis factor receptor superfamily"
+    ],
+    "TOP1": [
+        "Topoisomerases"
+    ],
+    "TOP2A": [
+        "Topoisomerases"
+    ],
+    "TP53": [
+        "N/A"
+    ],
+    "TP63": [
+        "MicroRNA protein coding host genes"
+    ],
+    "TPM3": [
+        "Tropomyosins"
+    ],
+    "TPM4": [
+        "Tropomyosins"
+    ],
+    "TPR": [
+        "Nucleoporins"
+    ],
+    "TRAF3": [
+        "Ring finger proteins",
+        "TNF receptor associated factors",
+        "Zinc fingers TRAF-type"
+    ],
+    "TRAF7": [
+        "Ring finger proteins",
+        "WD repeat domain containing",
+        "TNF receptor associated factors",
+        "Zinc fingers TRAF-type"
+    ],
+    "TRIM24": [
+        "Ring finger proteins",
+        "Tripartite motif family",
+        "PHD finger proteins",
+        "Bromodomain containing"
+    ],
+    "TRIM27": [
+        "Ring finger proteins",
+        "Tripartite motif family"
+    ],
+    "TRIM33": [
+        "Ring finger proteins",
+        "Tripartite motif family",
+        "PHD finger proteins",
+        "Bromodomain containing"
+    ],
+    "TRIM49C": [
+        "Ring finger proteins",
+        "Tripartite motif family"
+    ],
+    "TRIP11": [
+        "Golgins"
+    ],
+    "TRRAP": [
+        "SAGA complex",
+        "Armadillo like helical domain containing",
+        "Tip60/Nua4 histone acetyltransferase complex subunits",
+        "MicroRNA protein coding host genes"
+    ],
+    "TSC1": [
+        "Armadillo like helical domain containing",
+        "TSC complex"
+    ],
+    "TSC2": [
+        "Protein phosphatase 1 regulatory subunits",
+        "Armadillo like helical domain containing",
+        "TSC complex"
+    ],
+    "TSHR": [
+        "Glycoprotein hormone receptors"
+    ],
+    "U2AF1": [
+        "Zinc fingers CCCH-type",
+        "RNA binding motif containing",
+        "Spliceosomal A complex",
+        "Spliceosomal E complex"
+    ],
+    "U2AF2": [
+        "RNA binding motif containing",
+        "Spliceosomal A complex",
+        "Spliceosomal E complex"
+    ],
+    "UBE2A": [
+        "Ubiquitin conjugating enzymes E2"
+    ],
+    "UBE2D2": [
+        "Ubiquitin conjugating enzymes E2"
+    ],
+    "UBR5": [
+        "Ubiquitin protein ligase E3 component n-recognins",
+        "HECT domain containing"
+    ],
+    "UGT2B17": [
+        "UDP glucuronosyltransferases",
+        "Minor histocompatibility antigens"
+    ],
+    "USP6": [
+        "Ubiquitin specific peptidases"
+    ],
+    "USP8": [
+        "Ubiquitin specific peptidases"
+    ],
+    "USP9X": [
+        "Ubiquitin specific peptidases",
+        "Armadillo like helical domain containing"
+    ],
+    "USP44": [
+        "Ubiquitin specific peptidases"
+    ],
+    "VAV1": [
+        "Pleckstrin homology domain containing",
+        "Dbl family Rho GEFs",
+        "SH2 domain containing"
+    ],
+    "VHL": [
+        "N/A"
+    ],
+    "WAS": [
+        "Wiskott-Aldrich Syndrome protein family"
+    ],
+    "WDCP": [
+        "MRN complex"
+    ],
+    "WDR45": [
+        "WD repeat domain containing",
+        "WIPI family"
+    ],
+    "WIF1": [
+        "Receptor ligands"
+    ],
+    "WNK2": [
+        "WNK lysine deficient protein kinases"
+    ],
+    "WNK4": [
+        "WNK lysine deficient protein kinases"
+    ],
+    "WRN": [
+        "Exonucleases",
+        "RecQ like helicases"
+    ],
+    "WT1": [
+        "Zinc fingers C2H2-type"
+    ],
+    "WWTR1": [
+        "N/A"
+    ],
+    "XPA": [
+        "Xeroderma pigmentosum complementation groups"
+    ],
+    "XPC": [
+        "Xeroderma pigmentosum complementation groups"
+    ],
+    "XPO1": [
+        "Exportins"
+    ],
+    "YWHAE": [
+        "14-3-3 phospho-serine/phospho-threonine binding proteins"
+    ],
+    "ZBTB7B": [
+        "Zinc fingers C2H2-type",
+        "BTB domain containing"
+    ],
+    "ZBTB16": [
+        "Zinc fingers C2H2-type",
+        "BTB domain containing"
+    ],
+    "ZBTB20": [
+        "Zinc fingers C2H2-type",
+        "BTB domain containing",
+        "MicroRNA protein coding host genes"
+    ],
+    "ZCRB1": [
+        "Zinc fingers CCHC-type",
+        "RNA binding motif containing",
+        "U11/U12 di-snRNP",
+        "MicroRNA protein coding host genes"
+    ],
+    "ZEB1": [
+        "Zinc fingers C2H2-type",
+        "ZF class homeoboxes and pseudogenes"
+    ],
+    "ZFHX3": [
+        "Zinc fingers C2H2-type",
+        "Zinc fingers matrin-type",
+        "ZF class homeoboxes and pseudogenes"
+    ],
+    "ZFP36L1": [
+        "Zinc fingers CCCH-type"
+    ],
+    "ZFX": [
+        "Zinc fingers C2H2-type"
+    ],
+    "ZMYM2": [
+        "Zinc fingers MYM-type"
+    ],
+    "ZNF93": [
+        "Zinc fingers C2H2-type"
+    ],
+    "ZNF148": [
+        "Zinc fingers C2H2-type"
+    ],
+    "ZNF165": [
+        "Zinc fingers C2H2-type",
+        "SCAN domain containing"
+    ],
+    "ZNF208": [
+        "Zinc fingers C2H2-type"
+    ],
+    "ZNF331": [
+        "Zinc fingers C2H2-type"
+    ],
+    "ZNF384": [
+        "Zinc fingers C2H2-type"
+    ],
+    "ZNF429": [
+        "Zinc fingers C2H2-type"
+    ],
+    "ZNF521": [
+        "Zinc fingers C2H2-type"
+    ],
+    "ZNF626": [
+        "Zinc fingers C2H2-type"
+    ],
+    "ZNF680": [
+        "Zinc fingers C2H2-type"
+    ],
+    "ZNF721": [
+        "Zinc fingers C2H2-type"
+    ],
+    "ZNF780A": [
+        "Zinc fingers C2H2-type"
+    ],
+    "ZNF814": [
+        "Zinc fingers C2H2-type"
+    ],
+    "ZNRF3": [
+        "Ring finger proteins"
+    ],
+    "ZRSR2": [
+        "Zinc fingers CCCH-type",
+        "RNA binding motif containing",
+        "U11/U12 di-snRNP"
+    ],
+    "ZXDB": [
+        "Zinc fingers C2H2-type"
+    ]
+}
