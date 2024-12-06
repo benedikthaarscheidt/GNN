@@ -212,128 +212,50 @@ class ModularGNN(nn.Module):
         """
         Forward pass through the GNN.
         """
-        # Process layers
+        # Process all layers (no pooling yet)
         for i, layer in enumerate(self.layers):
             x = layer(x, edge_index, edge_attr=edge_attr, pathway_mode=self.layer_modes[i])
 
-        # Handle different pooling modes
-        if self.pooling_mode == 'none':
-            return x  # No pooling, return per-node embeddings
-        elif self.pooling_mode == 'scalar':
-            return x.mean(dim=1, keepdim=True)  # Per-node scalar embedding
-        elif self.pooling_mode == 'pathway':
-            if self.pathway_groups is None:
-                raise ValueError("Pathway groups must be provided for pathway-specific pooling.")
-            return self.aggregate_by_pathway(x)  # Pathway-specific pooling
-        else:
-            raise ValueError(f"Unknown pooling mode: {self.pooling_mode}")
+        # Apply final pooling mode
+        if self.pooling_mode == 'pathway' and self.pathway_groups is not None:
+            x = self.aggregate_by_pathway(x)  # Collapse nodes into pathway-level embeddings
+            x = x.view(1, -1)  # Flatten pathway embeddings to shape [1, num_pathways * embed_dim]
 
+        elif self.pooling_mode == 'scalar':
+            x = x.mean(dim=0, keepdim=True)  # Global mean pooling to scalar output [1, embed_dim]
+
+        elif self.pooling_mode == 'none':
+            x = x.view(1, -1)  # Flatten node embeddings to shape [1, num_nodes * embed_dim]
+
+        else:
+            raise ValueError(f"Unsupported pooling_mode: {self.pooling_mode}")
+
+        return x
+   
+        
     def aggregate_by_pathway(self, x):
         """
-        Aggregates embeddings for nodes within each pathway group.
+        Aggregates node embeddings into pathway-level embeddings.
+
+        Args:
+            x (Tensor): Node embeddings of shape [num_nodes, embed_dim].
+
+        Returns:
+            Tensor: Pathway-level embeddings of shape [num_pathways, embed_dim].
         """
         pathway_embeddings = []
         for pathway, nodes in self.pathway_groups.items():
             # Extract features for nodes in the current pathway
             pathway_features = x[nodes]
             # Aggregate features within the pathway (e.g., mean pooling)
-            pathway_embedding = torch.mean(pathway_features, dim=0, keepdim=True)
+            pathway_embedding = torch.mean(pathway_features, dim=0, keepdim=True)  # [1, embed_dim]
             pathway_embeddings.append(pathway_embedding)
 
         # Concatenate all pathway embeddings into a single matrix
-        # Shape: (num_pathways, output_dim)
+        # Shape: [num_pathways, embed_dim]
         return torch.cat(pathway_embeddings, dim=0)
 
 
-# IC50 Prediction Model
-class IC50Model(nn.Module):
-    def __init__(self, gnn, embed_dim=256, hidden_dim=1024, dropout=0.1, n_layers=6, norm="layernorm"):
-        super().__init__()
-        self.gnn = gnn  # Include ModularGNN
-        self.resnet = ResNet(embed_dim, hidden_dim, dropout, n_layers, norm)
-        self.embed_d = nn.Sequential(nn.LazyLinear(embed_dim), nn.ReLU())
-
-    def forward(self, cell_graph, drug_features, edge_index, edge_attr=None):
-        cell_embeddings = self.gnn(cell_graph.x, edge_index, edge_attr=edge_attr)
-        return self.resnet(self.embed_d(drug_features) + cell_embeddings)
 
 
-class ResNet(nn.Module):
-    def __init__(self, embed_dim=256, hidden_dim=1024, dropout=0.1, n_layers=6, norm="layernorm"):
-        super().__init__()
-        self.mlps = nn.ModuleList()
-        if norm == "layernorm":
-            norm = nn.LayerNorm
-        elif norm == "batchnorm":
-            norm = nn.BatchNorm1d
-        else:
-            norm = nn.Identity
-        for _ in range(n_layers):
-            self.mlps.append(nn.Sequential(nn.Linear(embed_dim, hidden_dim),
-                                           norm(hidden_dim),
-                                           nn.ReLU(),
-                                           nn.Dropout(dropout),
-                                           nn.Linear(hidden_dim, embed_dim)))
-        self.lin = nn.Linear(embed_dim, 1)
 
-    def forward(self, x):
-        for l in self.mlps:
-            x = (l(x) + x) / 2
-        return self.lin(x)
-
-
-# Dataset Class
-class GraphOmicsDataset(torch.utils.data.Dataset):
-    def __init__(self, gnn_input_graphs, drug_dict, data):
-        self.gnn_input_graphs = gnn_input_graphs
-        self.drug_dict = drug_dict
-        self.data = data
-
-    def __len__(self):
-        return len(self.data)
-
-    def __getitem__(self, idx):
-        instance = self.data.iloc[idx]
-        cell_line_id = instance.iloc[0]
-        drug_id = instance.iloc[1]
-        target = instance.iloc[2]
-        graph = self.gnn_input_graphs[cell_line_id]
-        drug_features = self.drug_dict[drug_id]
-        return graph, drug_features, torch.tensor([target])
-
-
-# Training Loop
-def train_step(model, optimizer, loader, device):
-    model.train()
-    loss_fn = nn.MSELoss()
-    total_loss = 0
-
-    for batch in loader:
-        optimizer.zero_grad()
-        cell_graph, drug_features, targets = batch
-        cell_graph = cell_graph.to(device)
-        drug_features = drug_features.to(device)
-        targets = targets.to(device)
-
-        predictions = model(cell_graph, drug_features, cell_graph.edge_index, cell_graph.edge_attr)
-        loss = loss_fn(predictions.squeeze(), targets.squeeze())
-        loss.backward()
-        optimizer.step()
-        total_loss += loss.item()
-
-    return total_loss / len(loader)
-
-
-def evaluate_step(model, loader, metrics, device):
-    model.eval()
-    with torch.no_grad():
-        for batch in loader:
-            cell_graph, drug_features, targets = batch
-            cell_graph = cell_graph.to(device)
-            drug_features = drug_features.to(device)
-            targets = targets.to(device)
-
-            predictions = model(cell_graph, drug_features, cell_graph.edge_index, cell_graph.edge_attr)
-            metrics.update(predictions.squeeze(), targets.squeeze())
-
-    return {k: v.item() for k, v in metrics.compute().items()}
