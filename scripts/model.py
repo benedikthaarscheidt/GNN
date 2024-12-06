@@ -245,16 +245,6 @@ class ModularGNN(nn.Module):
         return torch.cat(pathway_embeddings, dim=0)
 
 
-# IC50 Prediction Model
-class IC50Model(nn.Module):
-    def __init__(self, gnn, embed_dim=256, hidden_dim=1024, dropout=0.1, n_layers=6, norm="layernorm"):
-        super().__init__()
-        self.gnn = gnn  # Include ModularGNN
-        self.resnet = ResNet(embed_dim, hidden_dim, dropout, n_layers, norm)
-        self.embed_d = nn.Sequential(nn.LazyLinear(embed_dim), nn.ReLU())
 
-    def forward(self, cell_graph, drug_features, edge_index, edge_attr=None):
-        cell_embeddings = self.gnn(cell_graph.x, edge_index, edge_attr=edge_attr)
-        return self.resnet(self.embed_d(drug_features) + cell_embeddings)
 
 
