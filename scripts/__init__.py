@@ -10,3 +10,19 @@ from .models import EarlyStop, GroupwiseMetric
 
 # Import training logic
 from .train_model import train_model, train_step, evaluate_step
+
+# Define the public API for `import *`
+__all__ = [
+    "FingerprintFeaturizer",
+    "OmicsDataset",
+    "ModularGNN",
+    "ModularPathwayConv",
+    "ResNet",
+    "CombinedModel",
+    "DrugMLP",
+    "GroupwiseMetric",
+    "train_model",
+    "train_step",
+    "evaluate_step",
+    "EarlyStop",
+]
