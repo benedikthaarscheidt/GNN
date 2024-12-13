@@ -14,7 +14,6 @@ class ModularPathwayConv(MessagePassing):
         self.num_pathways_per_instance=num_pathways_per_instance
         self.linear = torch.nn.Linear(in_channels, out_channels)
 
-        print(self.num_pathways_per_instance)
         if isinstance(self.aggr, str):
             print(f"Initialized with '{self.aggr}' string-based aggregator")
         else:
@@ -25,19 +24,19 @@ class ModularPathwayConv(MessagePassing):
             raise ValueError("The 'batch' parameter is required for batched processing but is None.")
 
         x = x.float()
-        #x = self.linear(x)
+        x = self.linear(x)
 
         if not pathway_mode or pathway_tensor is None:
 
             x_updated = (self.propagate(edge_index, x=x, edge_attr=edge_attr) + x)#/2
         else:
             x_updated = self._process_pathways(x, edge_index, edge_attr, pathway_tensor, batch)
-        print(f"x_updated:{x_updated}")
+
         return x_updated
 
 
     def _process_pathways(self, x, edge_index, edge_attr, pathway_tensors, batch):
-        x_updated = torch.zeros_like(x)  # Initialize the updated features
+        x_updated = torch.zeros_like(x)  
             
         for pathway_index in range(pathway_tensors.size(0)):
             nodes = pathway_tensors[pathway_index, :]
@@ -45,7 +44,6 @@ class ModularPathwayConv(MessagePassing):
             if nodes.numel() == 0:
                 continue
     
-            # **Subgraph for the pathway (batch-wide)**
             sub_edge_index, _ = subgraph(nodes, edge_index, relabel_nodes=False)
     
             sub_edge_attr = None
@@ -54,8 +52,8 @@ class ModularPathwayConv(MessagePassing):
                 sub_edge_attr = edge_attr[edge_mask]
     
             x_propagated = self.propagate(sub_edge_index, x=x, edge_attr=sub_edge_attr)
-            # Update only the features for nodes in the pathway
-            x_updated[nodes] += (x_propagated[nodes] + x[nodes])/2
+
+            x_updated[nodes] += (x_propagated[nodes] + x[nodes])#/2
             
         return x_updated
            
@@ -86,46 +84,39 @@ class ModularGNN(nn.Module):
 
     
     def _shift_global_pathways(self, batch):
-        # Calculate node start indices using cumulative offsets
+        
         node_offsets = torch.cumsum(batch.bincount(), dim=0)
-        node_start_indices = torch.cat([torch.tensor([0], device=node_offsets.device), node_offsets[:-1]])  # Start index for each graph
+        node_start_indices = torch.cat([torch.tensor([0], device=node_offsets.device), node_offsets[:-1]]) 
         
         num_graphs = batch.unique().size(0)
         
-        # Repeat pathway groups to create an expanded tensor for each graph
         pathway_groups_shifted = self.pathway_groups.repeat(num_graphs, 1)
         
-        # Reshape pathway groups for easier graph-wise shifting
         pathway_tensors_reshaped = pathway_groups_shifted.view(num_graphs, self.pathway_groups.size(0), -1)
         
-        # Shift each graph's pathway tensor
         for graph_idx in range(num_graphs):
             node_offset = node_start_indices[graph_idx]
             shifted_pathway_tensor = pathway_tensors_reshaped[graph_idx]
             
-            # Shift only the valid node indices, not -1
             shifted_pathway_tensor[shifted_pathway_tensor >= 0] += node_offset
         
         return pathway_tensors_reshaped.view(-1, pathway_tensors_reshaped.size(-1))
         
     
     def _shift_individual_pathways(self, pathway_tensors, batch):
-        # Calculate node start indices using cumulative offsets
+
         node_offsets = torch.cumsum(batch.bincount(), dim=0)
         node_start_indices = torch.cat([torch.tensor([0], device=node_offsets.device), node_offsets[:-1]])  # Start index for each graph
         
         num_graphs = batch.unique().size(0)
         pathway_groups_shifted = pathway_tensors.clone()
         
-        # Reshape pathway_tensors for easier shifting
         pathway_tensors_reshaped = pathway_tensors.view(num_graphs, self.num_pathways_per_instance, -1)
         
-        # Shift each graph's pathway tensor
         for graph_idx in range(num_graphs):
             node_offset = node_start_indices[graph_idx]
             shifted_pathway_tensor = pathway_tensors_reshaped[graph_idx]
             
-            # Shift only the valid node indices, not -1
             shifted_pathway_tensor[shifted_pathway_tensor >= 0] += node_offset
         
         return pathway_tensors_reshaped.view(-1, pathway_tensors.size(-1))
@@ -181,31 +172,26 @@ class ModularGNN(nn.Module):
     def aggregate_by_pathway(self, x, edge_index, edge_attr, pathway_tensors, batch):
         batch_size = batch.max().item() + 1
         embedding_dim = x.size(1)
-        print("pooling")
+
         aggregated_pathway_features = torch.zeros(
             (batch_size, self.num_pathways_per_instance, embedding_dim), device=x.device
         )
         
-    
-        # **Pathway-wise aggregation logic**
         for pathway_index in range(pathway_tensors.size(0)):
             nodes = pathway_tensors[pathway_index, :]
             nodes = nodes[nodes >= 0]  # Remove padding (-1)
-            print(f"processing nodes:{nodes}")
+
             if nodes.numel() == 0:
                 continue
             
-            # **Aggregate features for nodes in this pathway**
             pathway_features = x[nodes]
             
             if pathway_features.size(0) > 0:
                 pathway_embedding = torch.mean(pathway_features, dim=0)
                 
-                # Identify which graph this pathway belongs to
                 graph_idx = pathway_index // self.num_pathways_per_instance
                 pathway_idx = pathway_index % self.num_pathways_per_instance
                 
-                # Store the result in the final tensor
                 aggregated_pathway_features[graph_idx, pathway_idx] = pathway_embedding
-        print(f"aggregated pathway features:{aggregated_pathway_features}")
+        
         return aggregated_pathway_features
