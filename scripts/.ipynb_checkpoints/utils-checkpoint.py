@@ -1,53 +1,51 @@
-from torch.utils.data import Dataset
-from torch import Tensor
 import numpy as np
-
+import torch
+from torch import Tensor
+from torch.utils.data import Dataset
+from torch_geometric.data import Data
 
 class OmicsDataset(Dataset):
-    def __init__(self, cell_graph_dict, drug_dict, data):
-        """
-        Dataset class for handling cell graph and drug data.
-
-        Args:
-            cell_graph_dict (dict): Dictionary mapping cell line IDs to graph Data objects.
-            drug_dict (dict): Dictionary mapping drug IDs to their featurized tensors.
-            data (DataFrame): DataFrame containing `SANGER_MODEL_ID`, `DRUG_ID`, and target (e.g., IC50).
-        """
-        self.cell_graph_dict = cell_graph_dict
-        self.drug_dict = drug_dict
+    def __init__(self, cell_graph_dict, drug_dict, data, pathway_tensor=None):
+        self.cell_graph_dict = cell_graph_dict  
+        self.drug_dict = drug_dict 
         self.cell_mapped_ids = {key: i for i, key in enumerate(self.cell_graph_dict.keys())}
         self.drug_mapped_ids = {key: i for i, key in enumerate(self.drug_dict.keys())}
-        self.data = data
-
+        self.data = data 
+        self.pathway_tensor = pathway_tensor 
+    
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
-        """
-        Retrieve an instance from the dataset.
-
-        Args:
-            idx (int): Index of the instance.
-
-        Returns:
-            tuple: (cell_graph, drug_tensor, target, cell_line_id, drug_id)
-        """
+       
         instance = self.data.iloc[idx]
         cell_id = instance["SANGER_MODEL_ID"]
         drug_id = instance["DRUG_ID"]
-        target = instance["target"]  # Adjust column name to match your target column
+        target = instance["LN_IC50"]
 
-        # Return graph, drug tensor, and other identifiers
+    
+        cell_graph = self.cell_graph_dict.get(cell_id, None)
+        if cell_graph is None:
+            raise KeyError(f"Cell graph for cell_id {cell_id} not found in cell_graph_dict.")
+        if not isinstance(cell_graph, Data):
+            raise TypeError(f"Expected Data object for {cell_id}, got {type(cell_graph)}.")
+    
+        assert cell_graph is not None, f"cell_graph is None for cell_id {cell_id}"
+    
+        drug_tensor = self.drug_dict.get(drug_id, None)
+        if drug_tensor is None:
+            raise KeyError(f"Drug tensor for drug_id {drug_id} not found in drug_dict.")
+        if not isinstance(drug_tensor, Tensor):
+            drug_tensor = torch.tensor(drug_tensor, dtype=torch.float32)
+    
         return (
-            self.cell_graph_dict[cell_id],  # PyTorch Geometric Data object
-            self.drug_dict[drug_id],       # Drug tensor
-            Tensor([target]),              # Target value (e.g., IC50)
-            Tensor([self.cell_mapped_ids[cell_id]]),  # Cell line ID as Tensor
-            Tensor([self.drug_mapped_ids[drug_id]])   # Drug ID as Tensor
+            cell_graph, 
+            drug_tensor,
+            torch.tensor([target], dtype=torch.float32), 
+            torch.tensor([self.cell_mapped_ids[cell_id]], dtype=torch.long), 
+            torch.tensor([self.drug_mapped_ids[drug_id]], dtype=torch.long) 
         )
 
-    
-    
 import rdkit
 from rdkit.Chem import AllChem
 class FingerprintFeaturizer():
@@ -56,13 +54,7 @@ class FingerprintFeaturizer():
                  R=2, 
                  fp_kwargs = {},
                  transform = Tensor):
-        """
-        Get a fingerprint from a list of molecules.
-        Available fingerprints: MACCS, morgan, topological_torsion
-        R is only used for morgan fingerprint.
-        fp_kwards passes the arguments to the rdkit fingerprint functions:
-        GetMorganFingerprintAsBitVect, GetMACCSKeysFingerprint, GetTopologicalTorsionFingerprint
-        """
+        
         self.R = R
         self.fp_kwargs = fp_kwargs
         self.fingerprint = fingerprint
@@ -90,7 +82,5 @@ class FingerprintFeaturizer():
                 drug_dict[drugs[i]] = None
         return drug_dict
     def __str__(self):
-        """
-        returns a description of the featurization
-        """
+        
         return f"{self.fingerprint}Fingerprint_R{self.R}_{str(self.fp_kwargs)}"

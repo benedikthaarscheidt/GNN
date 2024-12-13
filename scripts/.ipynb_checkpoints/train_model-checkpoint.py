@@ -1,108 +1,134 @@
+from torch.utils.data import Dataset
+from torch import Tensor
+import numpy as np
+import torch
+import sys
+from torch_geometric.data import Data
+from torch.nn.utils.rnn import pad_sequence
+import os
+import networkx as nx
+import scripts
+from scripts import *
+import torchmetrics
+from torch import nn
+import optuna
+import models
+from optuna.integration import TensorBoardCallback
+from model_GNN import ModularPathwayConv, ModularGNN
+torch.set_printoptions(threshold=torch.inf)
+from model_ResNet import CombinedModel, ResNet, DrugMLP  
+from torch_geometric.loader import DataLoader
+from torch_geometric.data import Batch
+
+def custom_collate_fn(batch):
+    
+    try:
+        cell_graphs = [item[0] for item in batch if item[0] is not None]  
+        drug_vectors = torch.stack([item[1] for item in batch if item[1] is not None])  
+        targets = torch.stack([item[2] for item in batch if item[2] is not None])  
+        cell_ids = torch.stack([item[3] for item in batch if item[3] is not None]) 
+        drug_ids = torch.stack([item[4] for item in batch if item[4] is not None]) 
+
+
+        cell_graph_batch = Batch.from_data_list(cell_graphs)  
+        return cell_graph_batch, drug_vectors, targets, cell_ids, drug_ids
+    
+    except Exception as e:
+        print(f"Error in custom_collate_fn: {e}")
+        print(f"Batch contents: {batch}")
+        raise e
+
+
 def evaluate_step(model, loader, metrics, device):
-    """
-    Perform one evaluation step for the combined model.
 
-    Args:
-        model (nn.Module): The combined model (GNN + Drug Model + ResNet).
-        loader (DataLoader): DataLoader for the evaluation dataset.
-        metrics (MetricTracker): Metric tracker for evaluation.
-        device (torch.device): The device to use (CPU or GPU).
-
-    Returns:
-        dict: Computed metrics as key-value pairs.
-    """
     metrics.increment()
-    model.eval()  # Set the model to evaluation mode
+    model.eval() 
 
-    with torch.no_grad():  # Disable gradient calculations for evaluation
+    with torch.no_grad(): 
         for batch in loader:
-            cell_graph, drug_vector, targets = batch['cell_graph'], batch['drug_vector'], batch['targets']
-            cell_graph = cell_graph.to(device)
-            drug_vector = drug_vector.to(device)
-            targets = targets.to(device)
 
-            # Forward pass through the model
+            cell_graph, drug_vector, targets = batch  
+            cell_graph = cell_graph.to(device)  # Batch object (PyG Data)
+            drug_vector = drug_vector.to(device)  # Tensor
+            targets = targets.to(device)  # Tensor
+
+
             outputs = model(cell_graph, drug_vector)
 
-            # Update metrics with predictions and targets
             metrics.update(
                 outputs.squeeze(),
-                targets.squeeze(),
-                cell_lines=batch['cell_lines'].to(device).squeeze(),
-                drugs=batch['drugs'].to(device).squeeze(),
+                targets.squeeze()
             )
 
-    # Return computed metrics
     return {key: value.item() for key, value in metrics.compute().items()}
 
 def train_step(model, optimizer, loader, config, device):
-    """
-    Perform one training step for the combined model (GNN + Drug Model + ResNet).
-    """
+   
+    print("training step")
     loss_fn = nn.MSELoss()
     total_loss = 0
-    model.train()  # Set the model to training mode
+    model.train() 
 
     for batch in loader:
-        cell_graph, drug_vector, targets = batch['cell_graph'], batch['drug_vector'], batch['targets']
-        cell_graph = cell_graph.to(device)
-        drug_vector = drug_vector.to(device)
-        targets = targets.to(device)
+        try:
+            cell_graph_batch, drug_tensor_batch, target_batch, cell_id_batch, drug_id_batch = batch
+        except Exception as e:
+            print(f"Error unpacking batch: {e}")
+            print(f"Batch contents: {batch}")
+            continue
 
-        # Zero gradients
+        cell_graph = cell_graph_batch.to(device)  # Batch object (PyG Data)
+        drug_vector = drug_tensor_batch.to(device)  # Tensor
+        targets = target_batch.to(device)  # Tensor
+
         optimizer.zero_grad()
 
-        # Forward pass through the combined model
         outputs = model(cell_graph, drug_vector)
 
-        # Compute loss
         loss = loss_fn(outputs.squeeze(), targets.squeeze())
 
-        # Backward pass and optimize
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), config["optimizer"]["clip_norm"])
         optimizer.step()
 
-        # Collect loss
         total_loss += loss.item()
 
-    return total_loss / len(loader)  # Return average loss for the epoc
+    return total_loss / len(loader)  
 
 def train_model(config, train_dataset, validation_dataset=None, callback_epoch=None):
-    """
-    Train the combined model with training and optional validation datasets.
-    """
-    # Define data loaders
-    train_loader = torch.utils.data.DataLoader(
+    train_loader = DataLoader(
         train_dataset,
         batch_size=config["optimizer"]["batch_size"],
+        shuffle=True,
         drop_last=True,
-        shuffle=True
-    )
-    if validation_dataset is not None:
-        val_loader = torch.utils.data.DataLoader(
-            validation_dataset,
-            batch_size=config["optimizer"]["batch_size"],
-            drop_last=False,
-            shuffle=False
+        collate_fn=custom_collate_fn
         )
-
-    # Initialize the model
-    gnn_model = ModularGNN(**config["gnn"])  # Initialize GNN with config
+    
+    val_loader = DataLoader(
+        validation_dataset,
+        batch_size=config["optimizer"]["batch_size"],
+        shuffle=True,
+        drop_last=True,
+        collate_fn=custom_collate_fn
+    )
+    
+    for batch in train_loader:
+        print(f"Batch successfully loaded")
+        break
+    
+    gnn_model = ModularGNN(**config["gnn"]) 
     drug_mlp = DrugMLP(input_dim=config["drug"]["input_dim"], embed_dim=config["gnn"]["output_dim"])
     resnet = ResNet(embed_dim=config["gnn"]["output_dim"], hidden_dim=config["resnet"]["hidden_dim"])
     combined_model = CombinedModel(gnn=gnn_model, drug_mlp=drug_mlp, resnet=resnet)
-
-    # Optimizer and scheduler
+    print(f"Model device: {next(combined_model.parameters()).device}")
+    print(f"Data device: {x.device}")
     optimizer = torch.optim.Adam(combined_model.parameters(), config["optimizer"]["learning_rate"])
     lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, patience=5)
     early_stop = EarlyStop(config["optimizer"]["stopping_patience"])
 
-    # Device setup
     device = torch.device(config["env"]["device"])
     combined_model.to(device)
 
-    # Define metrics
     metrics = torchmetrics.MetricTracker(torchmetrics.MetricCollection({
         "R_cellwise_residuals": GroupwiseMetric(
             metric=torchmetrics.functional.pearson_corrcoef,
@@ -120,16 +146,14 @@ def train_model(config, train_dataset, validation_dataset=None, callback_epoch=N
     }))
     metrics.to(device)
 
-    # Training loop
     best_val_target = None
     for epoch in range(config["env"]["max_epochs"]):
-        # Train for one epoch
-        train_loss = train_step(combined_model, optimizer, train_loader, config, device)
 
-        # Update learning rate scheduler
+        train_loss = train_step(combined_model, optimizer, train_loader, config, device)
+        print(f"computed train step {train_loss}")
+
         lr_scheduler.step(train_loss)
 
-        # Validation
         if validation_dataset is not None:
             validation_metrics = evaluate_step(combined_model, val_loader, metrics, device)
             if epoch > 0 and config["optimizer"]["use_momentum"]:
@@ -139,13 +163,11 @@ def train_model(config, train_dataset, validation_dataset=None, callback_epoch=N
         else:
             best_val_target = None
 
-        # Log progress
         if callback_epoch is None:
             print(f"Epoch {epoch + 1}: Train Loss: {train_loss:.4f}, Validation R_cellwise_residuals: {best_val_target}")
         else:
             callback_epoch(epoch, best_val_target)
 
-        # Early stopping
         if early_stop(train_loss):
             print(f"Stopping early at epoch {epoch + 1}.")
             break

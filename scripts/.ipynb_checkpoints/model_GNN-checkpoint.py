@@ -1,261 +1,229 @@
 import torch
 from torch import nn
 from torch.nn import functional as F
-from torchmetrics import Metric
-import torchmetrics
-from torch_geometric.nn import MessagePassing
-from torch_geometric.data import Data
-from torch_geometric.loader import DataLoader
+from torch_geometric.nn import MessagePassing, aggr
 from torch_geometric.utils import subgraph
-import numpy as np
-import torch_scatter
 from torch_scatter import scatter_add, scatter_max
 
-
-class ModularPathwayConv(nn.Module):
-    def __init__(self, in_channels, out_channels, aggr='sum', pathway_groups=None):
-        super().__init__()
+class ModularPathwayConv(MessagePassing):
+    def __init__(self, in_channels, out_channels,num_pathways_per_instance, aggr_mode="sum", pathway_groups=None):
+        super().__init__(aggr=aggr_mode)  
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.aggr = aggr
-        self.pathway_groups = pathway_groups  #
-        # Adding nodes and neighbors features in a 1-d tensor
-        self.mlp = nn.Sequential(
-            nn.Linear(2*in_channels, out_channels),  # h_v + aggr(h_N(v))
-            nn.ReLU(),
-            nn.Linear(out_channels, out_channels)
-        )
+        self.pathway_groups = pathway_groups
+        self.num_pathways_per_instance=num_pathways_per_instance
+        self.linear = torch.nn.Linear(in_channels, out_channels)
 
-    def forward(self, x, edge_index, edge_attr=None, pathway_mode=False):
-        x_updated=self.propagate(edge_index, x=x, edge_attr=edge_attr)
-        
-        if not pathway_mode or self.pathway_groups is None:
-            # Global message passing without pathway mode
-            return x_updated
+        print(self.num_pathways_per_instance)
+        if isinstance(self.aggr, str):
+            print(f"Initialized with '{self.aggr}' string-based aggregator")
+        else:
+            print(f"Initialized with {type(self.aggr).__name__} aggregator")
 
-        x_updated = x_updated.clone()  # Clone x to avoid overwriting the original tensor
-        for pathway, nodes in self.pathway_groups.items():
-    
-            # Zero out the pathway nodes in `x` but keep the rest intact
-            if pathway_mode:
-                temp_x = x.clone()
-                
+    def forward(self, x, edge_index, edge_attr=None, pathway_mode=False, pathway_tensor=None, batch=None):
+        if batch is None:
+            raise ValueError("The 'batch' parameter is required for batched processing but is None.")
 
-            sub_edge_index, _ = subgraph(nodes, edge_index, relabel_nodes=False)
-    
-            # Ensure sub_edge_index is only for valid edges involving the pathway
-            valid_mask = torch.isin(sub_edge_index[0], nodes) & torch.isin(sub_edge_index[1], nodes)
-    
-            # Filter sub_edge_index using valid_mask
-            sub_edge_index = sub_edge_index[:, valid_mask]
+        x = x.float()
+        #x = self.linear(x)
 
-            # Handle edge attributes if available
-            if edge_attr is not None:
-                # Filter the original edge_attr based on the valid_mask for the original edge_index
-                edge_mask = torch.isin(edge_index[0], nodes) & torch.isin(edge_index[1], nodes)
-                sub_edge_attr = edge_attr[edge_mask]  
-            else:
-                sub_edge_attr = None  
-    
-            # Perform propagation for the pathway and update the pathway nodes only
-            pathway_features = self.propagate(sub_edge_index, x=temp_x, edge_attr=sub_edge_attr)
+        if (not pathway_mode) or (pathway_tensor is None and self.pathway_groups is None):
+            x_updated = self.propagate(edge_index, x=x, edge_attr=edge_attr)
             
-            if pathway_features.dim() == 1 or pathway_features.shape[1] == 1:
-                # Single feature case: Directly assign
-                x_updated[nodes] = pathway_features[nodes]
-            else:
-                x_updated[nodes, :] = pathway_features[nodes, :] 
-        print("next layer")
+        else:
+            x_updated = self._process_pathways(x, edge_index, edge_attr, pathway_tensor, batch)
+
         return x_updated
 
 
-
-
-
-
-
-    def propagate(self, edge_index, x,edge_attr=None, pathway_mode=False):
-        """
-        Custom propagation function to aggregate messages from neighbors using index_add_.
-        Args:
-            edge_index (Tensor): Edge indices [2, E].
-            x (Tensor): Node features [N, 1] (one feature per node).
-            edge_attr (Tensor, optional): Edge attributes [E].
-            pathway_mode (bool): Whether pathway-specific aggregation is used.
-        Returns:
-            Tensor: Updated node features [N, out_channels] (N nodes, 2 features).
-        """
-        # Extract source (row) and target (col) nodes from edge_index
-        row, col = edge_index[0], edge_index[1]
-
-        # Ensure edge_index dimensions are correct
-        if edge_index.shape[0] != 2:
-            raise ValueError("edge_index must have shape [2, num_edges]")
-
-        # Compute messages (these will be from source nodes to target nodes)
-        messages = self.message(x[row], x[col], edge_attr)
-        out = torch.zeros((x.size(0), messages.size(1)), device=x.device) 
+    def _process_pathways(self, x, edge_index, edge_attr, pathway_tensors, batch):
+        x_updated = torch.zeros_like(x)  # Initialize the updated features
     
-        if self.aggr == 'mean' or self.aggr == 'sum':
-
-            # Sum aggregation using index_add_ for target nodes (from col indices)
-            out.index_add_(0, col, messages)
+        # **Compute node offsets** for each graph in the batch
+        node_offsets = torch.cumsum(batch.bincount(), dim=0)
+        node_start_indices = torch.cat([torch.tensor([0]), node_offsets[:-1]])  # Start index of each graph's nodes
+        
+        if self.pathway_groups is not None:
+            # **Global Pathway Mode**
+            num_graphs = batch.unique().size(0)
             
-            if self.aggr == 'mean':
-                # Normalize the aggregated messages by the degree (number of neighbors)
-                degree = torch.bincount(col, minlength=x.size(0)).clamp(min=1)
-
-                out = out / degree.unsqueeze(-1)  # Normalize by degree
+            # Repeat pathway_groups for every graph in the batch
+            graph_idx = torch.arange(num_graphs).repeat_interleave(self.num_pathways_per_instance)
+            
+            # Shift pathway indices globally for each graph in the batch
+            pathway_groups_shifted = self.pathway_groups + node_start_indices[graph_idx].view(-1, 1)
+        else:
+            # **Individual Pathway Mode**
+            # Here we use the pathway_tensors for each graph separately
+            num_graphs = batch.unique().size(0)
+            
+            pathway_groups_shifted = []
+            for graph_idx in range(num_graphs):
+                start_idx = graph_idx * self.num_pathways_per_instance
+                end_idx = start_idx + self.num_pathways_per_instance
+                local_pathway_tensor = pathway_tensors[start_idx:end_idx, :]
+    
+                node_offset = node_start_indices[graph_idx]
                 
-        elif self.aggr == 'max':
-            # Initialize the output tensor (same size as the node features)
-            out = torch.zeros((x.size(0), messages.size(1)), device=x.device)
-        
-            # Compute the absolute values of the messages
-            abs_messages = torch.abs(messages)
-        
-            # Iterate over all nodes (0 to x.size(0))
-            for node in range(x.size(0)):
-
-                mask = (col == node)
-        
-                if mask.any(): 
-
-                    node_messages = messages[mask] 
-                    
-                    abs_node_messages = abs_messages[mask]
-                    
-                    # Find the index of the maximum absolute value for each feature
-                    max_indices = torch.argmax(abs_node_messages, dim=0)  # Shape: [num_features]
-        
-                    # Retrieve the corresponding signed messages
-                    max_messages = node_messages[max_indices, torch.arange(messages.size(1))]
-                    # Assign the signed max messages to the output tensor
-                    out[node] = max_messages
-                    
-        else:
-            raise ValueError(f"Unsupported aggregation mode: {self.aggr}")
-        
-        return out
-
-
-    def message(self, x_i, x_j, edge_attr=None):
-        """
-        Compute messages for edges based on source and target node features,
-        where the sending node's feature is scaled by the edge attribute,
-        and both features are passed together to the MLP, then added along the second dimension.
-        Args:
-            x_i (Tensor): Features of source nodes (sending node) [E, in_channels].
-            x_j (Tensor): Features of target nodes (receiving node) [E, in_channels].
-            edge_attr (Tensor, optional): Attributes of edges [E].
-        Returns:
-            Tensor: Messages for edges [E, out_channels].
-        """
-        # Ensure x_i and x_j have the expected number of features
-        if x_i.shape[1] != x_j.shape[1]:
-            print("Source and target node features must have the same dimension.")
-   
-        # If edge_attr is provided, scale the sending node's feature (x_i) by the edge weight
-        if edge_attr is not None:
-            scaled_x_i = x_i * edge_attr.view(-1, 1)  # Scale the sending node feature (x_i)
-        else:
-            scaled_x_i = x_i  # No edge attribute, use the sending node feature directly
+                # **Shift only the valid node indices, not -1**
+                shifted_pathway_tensor = local_pathway_tensor.clone()
+                shifted_pathway_tensor[shifted_pathway_tensor >= 0] += node_offset
+                
+                pathway_groups_shifted.append(shifted_pathway_tensor)
+            
+            pathway_groups_shifted = torch.cat(pathway_groups_shifted, dim=0)
+        print(f"shifted pathway_groups:{pathway_groups_shifted}")
+        # **Pathway-wise propagation logic**
+        for pathway_index in range(pathway_groups_shifted.size(0)):
+            nodes = pathway_groups_shifted[pathway_index, :]
+            
+            nodes = nodes[nodes >= 0] 
+            if nodes.numel() == 0:
+                continue
     
-        # Concatenate the scaled sending node feature (x_i) and receiving node feature (x_j)
-        combined_message = torch.cat([scaled_x_i, x_j], dim=1)  # Concatenate along the feature dimension
+            # **Subgraph for the pathway (batch-wide)**
+            sub_edge_index, _ = subgraph(nodes, edge_index, relabel_nodes=False)
+
+            sub_edge_attr = None
+            if edge_attr is not None:
+                edge_mask = torch.isin(edge_index[0], nodes) & torch.isin(edge_index[1], nodes)
+                sub_edge_attr = edge_attr[edge_mask]
     
-        # Pass the concatenated message through the MLP
-        message = self.mlp(combined_message)  # Shape: [E, 2] after MLP transformation
-        # Sum the two transformed features along the second dimension (feature dimension)
-        #message = message.sum(dim=1, keepdim=True)  # Sum along dim=1 to get a single value per edge
-        #this wont work as the mlp needs at least 2 points in space 
-    
-        return message
+            x_propagated = self.propagate(sub_edge_index, x=x, edge_attr=sub_edge_attr)
+            # Update only the features for nodes in the pathway
+            x_updated[nodes] += x_propagated[nodes] + x[nodes]
+        print(f"x_updated[nodes]:{x_updated}")
+        return x_updated
+           
+
+
+    def message(self, x_j, edge_attr=None):
+        if edge_attr is not None: 
+            return x_j * edge_attr.view(-1, 1)
+        return x_j
 
 
 class ModularGNN(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, pathway_groups=None, layer_modes=None, pooling_mode='none', aggr_modes=None):
-        """
-        Args:
-            input_dim (int): Number of input features per node.
-            hidden_dim (int): Number of features in hidden layers.
-            output_dim (int): Number of output features per node or graph.
-            pathway_groups (dict, optional): Mapping of pathway names to lists of nodes.
-            layer_modes (list, optional): Modes for each layer (True = pathway, False = global).
-            pooling_mode (str): Pooling strategy ('none', 'scalar', 'pathway').
-            aggr_modes (list, optional): Aggregation types for each layer ('sum', 'mean', 'max').
-        """
+    def __init__(self, input_dim, hidden_dim, output_dim,num_pathways_per_instance, pathway_groups=None, layer_modes=None, pooling_mode=None, aggr_modes=None):
         super().__init__()
+        self.num_pathways_per_instance = num_pathways_per_instance
         self.layers = nn.ModuleList()
-        self.pathway_groups = pathway_groups
+        self.pathway_groups = pathway_groups  
         self.pooling_mode = pooling_mode
+        self.layer_modes = layer_modes or [False] * 3  
+        
 
-        if layer_modes is None:
-            layer_modes = [False] * 3  # Default to global convolution for all layers
         if aggr_modes is None:
-            aggr_modes = ['sum'] * 3  # Default to sum aggregation for all layers
-        assert len(layer_modes) == len(aggr_modes), "Layer modes and aggregation types must match in length."
+            aggr_modes = ['sum'] * 3  
 
-        # Input layer
-        self.layers.append(ModularPathwayConv(input_dim, hidden_dim, aggr=aggr_modes[0], pathway_groups=pathway_groups))
+        self.layers.append(ModularPathwayConv(input_dim, hidden_dim,num_pathways_per_instance, aggr_mode=aggr_modes[0], pathway_groups=pathway_groups))
 
-        # Hidden layers
-        for mode, aggr in zip(layer_modes[1:-1], aggr_modes[1:-1]):
-            self.layers.append(ModularPathwayConv(hidden_dim, hidden_dim, aggr=aggr, pathway_groups=pathway_groups))
+        for mode, aggr_mode in zip(self.layer_modes[1:-1], aggr_modes[1:-1]):
+            self.layers.append(ModularPathwayConv(hidden_dim, hidden_dim,num_pathways_per_instance, aggr_mode=aggr_mode, pathway_groups=pathway_groups))
+        
+        self.layers.append(ModularPathwayConv(hidden_dim, output_dim,num_pathways_per_instance, aggr_mode=aggr_modes[-1], pathway_groups=pathway_groups))
 
-        # Output layer
-        self.layers.append(ModularPathwayConv(hidden_dim, output_dim, aggr=aggr_modes[-1], pathway_groups=pathway_groups))
-
-        self.layer_modes = layer_modes
-
-    def forward(self, x, edge_index, edge_attr=None):
-        """
-        Forward pass through the GNN.
-        """
-        # Process all layers (no pooling yet)
+    def forward(self, x, edge_index, edge_attr=None, pathway_tensor=None, batch=None):
+        # Determine batch size
+        if batch is not None:
+            batch_size = batch.unique().size(0)
         for i, layer in enumerate(self.layers):
-            x = layer(x, edge_index, edge_attr=edge_attr, pathway_mode=self.layer_modes[i])
+            current_pathway_tensor = pathway_tensor if pathway_tensor is not None else self.pathway_groups
+            x = layer(x, edge_index, edge_attr=edge_attr, pathway_mode=self.layer_modes[i], pathway_tensor=current_pathway_tensor,batch=batch)
+    
+        # Pooling logic
+        # Aggregate pathway embeddings
+        if self.pooling_mode == 'pathway':
+            pathway_source = pathway_tensor if pathway_tensor is not None else self.pathway_groups
+            if pathway_source is not None:
+                x = self.aggregate_by_pathway(x, edge_index, edge_attr, pathway_source, batch=batch)
 
-        # Apply final pooling mode
-        if self.pooling_mode == 'pathway' and self.pathway_groups is not None:
-            x = self.aggregate_by_pathway(x)  # Collapse nodes into pathway-level embeddings
-            x = x.view(1, -1)  # Flatten pathway embeddings to shape [1, num_pathways * embed_dim]
-
+    
         elif self.pooling_mode == 'scalar':
-            x = x.mean(dim=0, keepdim=True)  # Global mean pooling to scalar output [1, embed_dim]
-
-        elif self.pooling_mode == 'none':
-            x = x.view(1, -1)  # Flatten node embeddings to shape [1, num_nodes * embed_dim]
-
+            from torch_geometric.nn import global_mean_pool
+            if batch is None:
+                raise ValueError("Batch tensor is required for global pooling with multiple graphs")
+            x = global_mean_pool(x, batch)
+            x = x.mean(dim=1, keepdim=True)
+    
+        elif self.pooling_mode is None:
+            from torch_geometric.nn import global_mean_pool
+            if batch is None:
+                raise ValueError("Batch tensor is required to flatten node embeddings per graph")
+            x = global_mean_pool(x, batch)
+            batch_size = x.size(0)
+            x = x.view(batch_size, -1)
+    
         else:
             raise ValueError(f"Unsupported pooling_mode: {self.pooling_mode}")
-
+    
         return x
-   
+
+    def aggregate_by_pathway(self, x, edge_index, edge_attr, pathway_tensors, batch):
+
+        print("pooling it")
+        # **Compute node offsets** for each graph in the batch
+        node_offsets = torch.cumsum(batch.bincount(), dim=0)
+        node_start_indices = torch.cat([torch.tensor([0]), node_offsets[:-1]])  # Start index of each graph's nodes
         
-    def aggregate_by_pathway(self, x):
-        """
-        Aggregates node embeddings into pathway-level embeddings.
-
-        Args:
-            x (Tensor): Node embeddings of shape [num_nodes, embed_dim].
-
-        Returns:
-            Tensor: Pathway-level embeddings of shape [num_pathways, embed_dim].
-        """
-        pathway_embeddings = []
-        for pathway, nodes in self.pathway_groups.items():
-            # Extract features for nodes in the current pathway
+        if self.pathway_groups is not None:
+            # **Global Pathway Mode**
+            num_graphs = batch.unique().size(0)
+            
+            # Repeat pathway_groups for every graph in the batch
+            graph_idx = torch.arange(num_graphs).repeat_interleave(self.num_pathways_per_instance)
+            
+            # Shift pathway indices globally for each graph in the batch
+            pathway_groups_shifted = self.pathway_groups.clone()
+            pathway_groups_shifted[pathway_groups_shifted >= 0] += node_start_indices[graph_idx].view(-1, 1)
+        else:
+            # **Individual Pathway Mode**
+            num_graphs = batch.unique().size(0)
+            
+            pathway_groups_shifted = []
+            for graph_idx in range(num_graphs):
+                start_idx = graph_idx * self.num_pathways_per_instance
+                end_idx = start_idx + self.num_pathways_per_instance
+                local_pathway_tensor = pathway_tensors[start_idx:end_idx, :]
+    
+                node_offset = node_start_indices[graph_idx]
+                
+                # **Shift only the valid node indices, not -1**
+                shifted_pathway_tensor = local_pathway_tensor.clone()
+                shifted_pathway_tensor[shifted_pathway_tensor >= 0] += node_offset
+                
+                pathway_groups_shifted.append(shifted_pathway_tensor)
+            
+            pathway_groups_shifted = torch.cat(pathway_groups_shifted, dim=0)
+    
+        batch_size = batch.max().item() + 1
+        embedding_dim = x.size(1)
+        
+        # Store aggregated pathway embeddings
+        aggregated_pathway_features = torch.zeros(
+            (batch_size, self.num_pathways_per_instance, embedding_dim), device=x.device
+        )
+        
+    
+        # **Pathway-wise aggregation logic**
+        for pathway_index in range(pathway_groups_shifted.size(0)):
+            nodes = pathway_groups_shifted[pathway_index, :]
+            nodes = nodes[nodes >= 0]  # Remove padding (-1)
+            print(f"processing nodes:{nodes}")
+            if nodes.numel() == 0:
+                continue
+            
+            # **Aggregate features for nodes in this pathway**
             pathway_features = x[nodes]
-            # Aggregate features within the pathway (e.g., mean pooling)
-            pathway_embedding = torch.mean(pathway_features, dim=0, keepdim=True)  # [1, embed_dim]
-            pathway_embeddings.append(pathway_embedding)
-
-        # Concatenate all pathway embeddings into a single matrix
-        # Shape: [num_pathways, embed_dim]
-        return torch.cat(pathway_embeddings, dim=0)
-
-
-
-
-
+            
+            if pathway_features.size(0) > 0:
+                pathway_embedding = torch.mean(pathway_features, dim=0)
+                
+                # Identify which graph this pathway belongs to
+                graph_idx = pathway_index // self.num_pathways_per_instance
+                pathway_idx = pathway_index % self.num_pathways_per_instance
+                
+                # Store the result in the final tensor
+                aggregated_pathway_features[graph_idx, pathway_idx] = pathway_embedding
+        print(f"aggregated pathway features:{aggregated_pathway_features}")
+        return aggregated_pathway_features

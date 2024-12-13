@@ -3,7 +3,7 @@ from torch import nn
 from torch import Tensor
 from torchmetrics import Metric
 import torchmetrics
-from model_GNN import ModularGNN  # Import the ModularGNN model from model_GNN.py
+from model_GNN import ModularGNN  
 
 
 class EarlyStop():
@@ -65,7 +65,6 @@ class GroupwiseMetric(Metric):
         return torch.mean(torch.stack(metrics))  # Macro average
 
 
-# Define the combined model
 class CombinedModel(nn.Module):
     def __init__(self, gnn, drug_mlp, resnet):
         super().__init__()
@@ -73,30 +72,33 @@ class CombinedModel(nn.Module):
         self.drug_mlp = drug_mlp
         self.resnet = resnet
 
-    def forward(self, cell_graph, drug_vector):
-        # Get the GNN embedding for the cell graph
+    def forward(self, cell_graph, drug_vector, pathway_tensor=None):
+
+        print("Start of forward pass")  
         cell_embedding = self.gnn(
             x=cell_graph.x,
             edge_index=cell_graph.edge_index,
-            edge_attr=cell_graph.edge_attr
+            edge_attr=cell_graph.edge_attr if 'edge_attr' in cell_graph else None,
+            pathway_tensor=pathway_tensor if pathway_tensor is not None else None  
         )
+        print("After GNN embedding") 
+        print(f"cell embedding shape",cell_embedding.shape)
 
-        # Pooling or flattening to reduce dimensionality
-        if cell_embedding.dim() > 2:  # Handle cases where pooling is not applied
+        if cell_embedding.dim() > 2: 
+            
             cell_embedding = cell_embedding.mean(dim=0)  # Global mean pooling
+            print("pooled bc dimensions of the graph embedding was off")
 
-        # Get the drug embedding
-        drug_embedding = self.drug_mlp(drug_vector)
+        drug_embedding = self.drug_mlp(drug_vector.float())
+        print(f"Drug embedding shape: {drug_embedding.shape}")  
 
-        # Combine cell and drug embeddings
-        combined_embedding = cell_embedding + drug_embedding
+        combined_embedding = cell_embedding.float() + drug_embedding.float()
 
-        # Final prediction using ResNet
-        return self.resnet(combined_embedding)
+        return self.resnet(combined_embedding.float())
 
-# Define components of the model
 class DrugMLP(nn.Module):
-    def __init__(self, input_dim, embed_dim):
+    def __init__(self, input_dim, embed_dim=44):
+        
         super().__init__()
         self.model = nn.Sequential(
             nn.Linear(input_dim, embed_dim),
@@ -105,6 +107,7 @@ class DrugMLP(nn.Module):
         )
 
     def forward(self, x):
+       
         return self.model(x)
 
 class ResNet(nn.Module):
@@ -126,33 +129,33 @@ class ResNet(nn.Module):
         return self.final_layer(x)
 
 
-def train_step(model, optimizer, loader, config, device):
-    loss_fn = nn.MSELoss()
-    ls = []
-    model.train()
-    for c, d, targets, cell_lines, drugs in loader:
-        optimizer.zero_grad()
-        c, d, targets = c.to(device), d.to(device), targets.to(device)
-        outputs = model(c, d)
-        loss = loss_fn(outputs.squeeze(), targets.squeeze())
-        loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), config["optimizer"]["clip_norm"])
-        optimizer.step()
-        ls.append(loss.item())
-    return np.mean(ls)
-
-
-def evaluate_step(model, loader, metrics, device):
-    metrics.increment()
-    model.eval()
-    for c, d, targets, cell_lines, drugs in loader:
-        with torch.no_grad():
-            c, d = c.to(device), d.to(device)
-            outputs = model(c, d)
-            metrics.update(
-                outputs.squeeze(),
-                targets.to(device).squeeze(),
-                cell_lines=cell_lines.to(device).squeeze(),
-                drugs=drugs.to(device).squeeze(),
-            )
-    return {key: value.item() for key, value in metrics.compute().items()}
+#def train_step(model, optimizer, loader, config, device):
+#    loss_fn = nn.MSELoss()
+#    ls = []
+#    model.train()
+#    for c, d, targets, cell_lines, drugs in loader:
+#        optimizer.zero_grad()
+#        c, d, targets = c.to(device), d.to(device), targets.to(device)
+#        outputs = model(c, d)
+#        loss = loss_fn(outputs.squeeze(), targets.squeeze())
+#        loss.backward()
+#        torch.nn.utils.clip_grad_norm_(model.parameters(), config["optimizer"]["clip_norm"])
+#        optimizer.step()
+#        ls.append(loss.item())
+#    return np.mean(ls)
+#
+#
+#def evaluate_step(model, loader, metrics, device):
+#    metrics.increment()
+#    model.eval()
+#    for c, d, targets, cell_lines, drugs in loader:
+#        with torch.no_grad():
+#            c, d = c.to(device), d.to(device)
+#            outputs = model(c, d)
+#            metrics.update(
+#                outputs.squeeze(),
+#                targets.to(device).squeeze(),
+#                cell_lines=cell_lines.to(device).squeeze(),
+#                drugs=drugs.to(device).squeeze(),
+#            )
+#    return {key: value.item() for key, value in metrics.compute().items()}
