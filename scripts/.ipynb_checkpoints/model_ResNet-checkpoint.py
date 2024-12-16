@@ -74,15 +74,15 @@ class CombinedModel(nn.Module):
 
     def forward(self, cell_graph, drug_vector, pathway_tensor=None):
 
-        print("Start of forward pass")  
+
         cell_embedding = self.gnn(
             x=cell_graph.x,
             edge_index=cell_graph.edge_index,
             edge_attr=cell_graph.edge_attr if 'edge_attr' in cell_graph else None,
-            pathway_tensor=pathway_tensor if pathway_tensor is not None else None  
+            pathway_tensor=pathway_tensor if pathway_tensor is not None else None,
+            batch=cell_graph.batch 
         )
-        print("After GNN embedding") 
-        print(f"cell embedding shape",cell_embedding.shape)
+        print(f"cell embedding shape:{cell_embedding.shape}")
 
         if cell_embedding.dim() > 2: 
             
@@ -90,7 +90,7 @@ class CombinedModel(nn.Module):
             print("pooled bc dimensions of the graph embedding was off")
 
         drug_embedding = self.drug_mlp(drug_vector.float())
-        print(f"Drug embedding shape: {drug_embedding.shape}")  
+        print(f"drug_embedding shape:{drug_embedding.shape}")
 
         combined_embedding = cell_embedding.float() + drug_embedding.float()
 
