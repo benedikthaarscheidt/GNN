@@ -3,8 +3,8 @@ from .utils import FingerprintFeaturizer, OmicsDataset
 
 # Import models
 from .model_GNN import ModularGNN, ModularPathwayConv
-from .model_ResNet import ResNet, CombinedModel, DrugMLP
-from .models import EarlyStop, GroupwiseMetric
+from .model_ResNet import ResNet, CombinedModel, DrugMLP,EarlyStop,GroupwiseMetric
+
 # Import metrics
 
 

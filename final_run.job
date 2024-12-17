@@ -1,0 +1,25 @@
+#!/bin/bash
+
+#SBATCH --partition=gpu                # Use the GPU partition
+#SBATCH --nodes=1                       # Run on a single node
+#SBATCH --ntasks=1                      # Number of tasks
+#SBATCH --cpus-per-task=100              # Number of CPU cores per task
+#SBATCH --gpus=1                        # Number of GPUs
+#SBATCH --mem=164G                      # Memory allocation
+#SBATCH --time=1-00:00                  # Maximum runtime (1 day)
+#SBATCH --chdir=/work/haarscheid/cancer_baseline2/cancer_baseline/Graphs  # Working directory
+#SBATCH --mail-type=ALL                 # Email notifications for job start, end, and failure
+#SBATCH --mail-user=haarscheid@uni-potsdam.de  # Your email address
+#SBATCH --output=slurm-%j.out           # Output file name where %j is the job ID
+
+# Load necessary modules (adjust based on your environment)
+module load lang/conda/24.1.2
+
+# Activate your Conda environment
+source activate GNN3
+
+# Execute the Jupyter notebook as a Python script using nbconvert
+jupyter nbconvert --to notebook --execute --inplace final_run.ipynb
+
+# Alternatively, you can specify output log as follows:
+# jupyter nbconvert --to notebook --execute --inplace your_notebook.ipynb --stdout > output.log

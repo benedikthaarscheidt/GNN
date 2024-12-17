@@ -19,6 +19,9 @@ torch.set_printoptions(threshold=torch.inf)
 from model_ResNet import CombinedModel, ResNet, DrugMLP  
 from torch_geometric.loader import DataLoader
 from torch_geometric.data import Batch
+import torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.utils.data.distributed import DistributedSampler
 
 def custom_collate_fn(batch):
     
@@ -63,13 +66,13 @@ def evaluate_step(model, loader, metrics, device):
     return {key: value.item() for key, value in metrics.compute().items()}
 
 def train_step(model, optimizer, loader, config, device):
-   
-    print("training step")
+    print(f"Running on device: {device}")  # Verify the GPU being used for training
     loss_fn = nn.MSELoss()
     total_loss = 0
-    model.train() 
-
+    model.train()
+    i = 0
     for batch in loader:
+        i += 1
         try:
             cell_graph_batch, drug_tensor_batch, target_batch, cell_id_batch, drug_id_batch = batch
         except Exception as e:
@@ -77,51 +80,97 @@ def train_step(model, optimizer, loader, config, device):
             print(f"Batch contents: {batch}")
             continue
 
-        cell_graph = cell_graph_batch.to(device)  # Batch object (PyG Data)
-        drug_vector = drug_tensor_batch.to(device)  # Tensor
-        targets = target_batch.to(device)  # Tensor
+        cell_graph = cell_graph_batch.to(device)
+        drug_vector = drug_tensor_batch.to(device)
+        targets = target_batch.to(device)
 
         optimizer.zero_grad()
 
         outputs = model(cell_graph, drug_vector)
 
         loss = loss_fn(outputs.squeeze(), targets.squeeze())
-
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), config["optimizer"]["clip_norm"])
         optimizer.step()
 
         total_loss += loss.item()
+        print(f"Batch {i}, Loss: {loss.item():.4f}")
 
-    return total_loss / len(loader)  
+    return total_loss / len(loader)
 
+def init_ddp(config, model):
+
+    local_rank = config["env"]["local_rank"]
+
+    # Manually set the environment variables for DistributedDataParallel
+    os.environ['MASTER_ADDR'] = 'localhost'  # Master node address
+    os.environ['MASTER_PORT'] = '12345'     # Communication port
+    os.environ['WORLD_SIZE'] = str(config["env"]["world_size"])  # Total number of processes (GPUs)
+    os.environ['RANK'] = str(config["env"]["rank"])  # Global rank
+    os.environ['LOCAL_RANK'] = str(local_rank)  # Local rank
+
+    # Set the device for the current process (GPU)
+    torch.cuda.set_device(local_rank)
+
+    # Move model to the correct GPU for this process
+    model = model.to(f'cuda:{local_rank}')
+
+    # Initialize the process group
+    dist.init_process_group(backend='nccl', init_method='env://')
+
+    # Wrap the model in DistributedDataParallel (DDP)
+    model = DDP(model, device_ids=[local_rank])
+
+    return model
 def train_model(config, train_dataset, validation_dataset=None, callback_epoch=None):
     """Main training function for the combined GNN, ResNet, and DrugMLP model."""
+    # Force single GPU setup (disable multi-GPU)
+    config["env"]["world_size"] = 1  # Use only one GPU
+    config["env"]["rank"] = 0        # Global rank for the first GPU
+    config["env"]["local_rank"] = 0   # Local rank for the first GPU (GPU 0)
+
+
+    train_sampler = DistributedSampler(train_dataset, num_replicas=config["env"]["world_size"], rank=config["env"]["rank"])
+
+    # Set up DataLoader with the sampler
     train_loader = DataLoader(
         train_dataset,
         batch_size=config["optimizer"]["batch_size"],
-        shuffle=True,
+        shuffle=False,  # Don't shuffle, since DistributedSampler handles it
         drop_last=True,
-        collate_fn=custom_collate_fn
+        collate_fn=custom_collate_fn,
+        num_workers=8,  # Parallelize data loading
+        sampler=train_sampler  # Use the sampler for distributed loading
     )
     
     val_loader = None
     if validation_dataset is not None:
+        # Set up DistributedSampler for validation dataset
+        val_sampler = DistributedSampler(validation_dataset, num_replicas=config["env"]["world_size"], rank=config["env"]["rank"], shuffle=False)
+    
         val_loader = DataLoader(
             validation_dataset,
             batch_size=config["optimizer"]["batch_size"],
-            shuffle=True,
+            shuffle=False,  # Don't shuffle, since DistributedSampler handles it
             drop_last=True,
-            collate_fn=custom_collate_fn
+            collate_fn=custom_collate_fn,
+            num_workers=8,  # Parallelize data loading
+            sampler=val_sampler  # Use the sampler for distributed loading
         )
-
     device = torch.device(config["env"]["device"])
 
     # Initialize the Combined Model
     gnn_model = ModularGNN(**config["gnn"])
-    drug_mlp = DrugMLP(input_dim=config["drug"]["input_dim"], embed_dim=config["gnn"]["output_dim"])
-    resnet = ResNet(embed_dim=config["gnn"]["output_dim"], hidden_dim=config["resnet"]["hidden_dim"])
+    drug_mlp = DrugMLP(input_dim=config["drug"]["input_dim"], embed_dim=config["drug"]["embed_dim"])
+    resnet = ResNet(embed_dim=config["drug"]["embed_dim"], hidden_dim=config["resnet"]["hidden_dim"])
     combined_model = CombinedModel(gnn=gnn_model, drug_mlp=drug_mlp, resnet=resnet)
+    
+    if torch.cuda.is_available():
+        n_gpus = torch.cuda.device_count()
+        if n_gpus > 1:
+            print(f"number of GPUs:{n_gpus}")
+            combined_model = init_ddp(config, combined_model)  # Initialize DDP if multiple GPUs are available
+    
     combined_model.to(device)
 
     optimizer = torch.optim.Adam(combined_model.parameters(), lr=config["optimizer"]["learning_rate"])

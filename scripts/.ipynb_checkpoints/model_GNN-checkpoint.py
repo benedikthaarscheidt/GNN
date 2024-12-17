@@ -10,14 +10,8 @@ class ModularPathwayConv(MessagePassing):
         super().__init__(aggr=aggr_mode)  
         self.in_channels = in_channels
         self.out_channels = out_channels
-        
         self.num_pathways_per_instance=num_pathways_per_instance
         self.linear = torch.nn.Linear(in_channels, out_channels)
-
-        if isinstance(self.aggr, str):
-            print(f"Initialized with '{self.aggr}' string-based aggregator")
-        else:
-            print(f"Initialized with {type(self.aggr).__name__} aggregator")
 
     def forward(self, x, edge_index, edge_attr=None, pathway_mode=False, pathway_tensor=None, batch=None):
         if batch is None:
@@ -27,17 +21,15 @@ class ModularPathwayConv(MessagePassing):
         x = self.linear(x)
 
         if not pathway_mode or pathway_tensor is None:
-
-            x_updated = (self.propagate(edge_index, x=x, edge_attr=edge_attr) + x)#/2
+            x_updated = (self.propagate(edge_index, x=x, edge_attr=edge_attr) + x)
         else:
             x_updated = self._process_pathways(x, edge_index, edge_attr, pathway_tensor, batch)
 
         return x_updated
 
-
     def _process_pathways(self, x, edge_index, edge_attr, pathway_tensors, batch):
-        x_updated = torch.zeros_like(x)  
-            
+        x_updated = torch.zeros_like(x)  # This stays on the same device as x
+        
         for pathway_index in range(pathway_tensors.size(0)):
             nodes = pathway_tensors[pathway_index, :]
             nodes = nodes[nodes >= 0] 
@@ -45,17 +37,16 @@ class ModularPathwayConv(MessagePassing):
                 continue
     
             sub_edge_index, _ = subgraph(nodes, edge_index, relabel_nodes=False)
-    
             sub_edge_attr = None
             if edge_attr is not None:
                 edge_mask = torch.isin(edge_index[0], nodes) & torch.isin(edge_index[1], nodes)
                 sub_edge_attr = edge_attr[edge_mask]
     
             x_propagated = self.propagate(sub_edge_index, x=x, edge_attr=sub_edge_attr)
-
-            x_updated[nodes] += (x_propagated[nodes] + x[nodes])#/2
+            x_updated[nodes] += (x_propagated[nodes] + x[nodes])
             
         return x_updated
+
            
     def message(self, x_j, edge_attr=None):
         if edge_attr is not None: 
@@ -67,62 +58,54 @@ class ModularGNN(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim,num_pathways_per_instance, pathway_groups=None, layer_modes=None, pooling_mode=None, aggr_modes=None):
         super().__init__()
         self.num_pathways_per_instance = num_pathways_per_instance
-        self.layers = nn.ModuleList()
         self.pathway_groups = pathway_groups  
         self.pooling_mode = pooling_mode
         self.layer_modes = layer_modes or [False] * 3  
 
+        self.layers = nn.ModuleList()
         if aggr_modes is None:
             aggr_modes = ['sum'] * 3  
 
-        self.layers.append(ModularPathwayConv(input_dim, hidden_dim,num_pathways_per_instance, aggr_mode=aggr_modes[0]))
+        self.layers.append(ModularPathwayConv(input_dim, hidden_dim, num_pathways_per_instance, aggr_mode=aggr_modes[0]))
 
         for mode, aggr_mode in zip(self.layer_modes[1:-1], aggr_modes[1:-1]):
-            self.layers.append(ModularPathwayConv(hidden_dim, hidden_dim,num_pathways_per_instance, aggr_mode=aggr_mode))
+            self.layers.append(ModularPathwayConv(hidden_dim, hidden_dim, num_pathways_per_instance, aggr_mode=aggr_mode))
         
-        self.layers.append(ModularPathwayConv(hidden_dim, output_dim,num_pathways_per_instance, aggr_mode=aggr_modes[-1]))
+        self.layers.append(ModularPathwayConv(hidden_dim, output_dim, num_pathways_per_instance, aggr_mode=aggr_modes[-1]))
 
     
     def _shift_global_pathways(self, batch):
-        
-        node_offsets = torch.cumsum(batch.bincount(), dim=0)
+        node_offsets = torch.cumsum(batch.bincount(), dim=0).to(batch.device)
         node_start_indices = torch.cat([torch.tensor([0], device=node_offsets.device), node_offsets[:-1]]) 
         
         num_graphs = batch.unique().size(0)
-        
-        pathway_groups_shifted = self.pathway_groups.repeat(num_graphs, 1)
+        pathway_groups_shifted = self.pathway_groups.repeat(num_graphs, 1).to(batch.device)
         
         pathway_tensors_reshaped = pathway_groups_shifted.view(num_graphs, self.pathway_groups.size(0), -1)
         
         for graph_idx in range(num_graphs):
             node_offset = node_start_indices[graph_idx]
             shifted_pathway_tensor = pathway_tensors_reshaped[graph_idx]
-            
-            shifted_pathway_tensor[shifted_pathway_tensor >= 0] += node_offset
+            shifted_pathway_tensor[shifted_pathway_tensor >= 0] += node_offset  # No device mismatch now
         
         return pathway_tensors_reshaped.view(-1, pathway_tensors_reshaped.size(-1))
-        
+
     
     def _shift_individual_pathways(self, pathway_tensors, batch):
-
-        node_offsets = torch.cumsum(batch.bincount(), dim=0)
-        node_start_indices = torch.cat([torch.tensor([0], device=node_offsets.device), node_offsets[:-1]])  # Start index for each graph
+        node_offsets = torch.cumsum(batch.bincount(), dim=0).to(batch.device)
+        node_start_indices = torch.cat([torch.tensor([0], device=batch.device), node_offsets[:-1]])
         
-        num_graphs = batch.unique().size(0)
-        pathway_groups_shifted = pathway_tensors.clone()
+        pathway_tensors_reshaped = pathway_tensors.view(batch.max() + 1, self.num_pathways_per_instance, -1).to(batch.device)
         
-        pathway_tensors_reshaped = pathway_tensors.view(num_graphs, self.num_pathways_per_instance, -1)
-        
-        for graph_idx in range(num_graphs):
+        for graph_idx in range(batch.max().item() + 1):
             node_offset = node_start_indices[graph_idx]
             shifted_pathway_tensor = pathway_tensors_reshaped[graph_idx]
-            
-            shifted_pathway_tensor[shifted_pathway_tensor >= 0] += node_offset
+            shifted_pathway_tensor[shifted_pathway_tensor >= 0] += node_offset  # No device mismatch
         
         return pathway_tensors_reshaped.view(-1, pathway_tensors.size(-1))
-
     
     def forward(self, x, edge_index, edge_attr=None, pathway_tensor=None, batch=None):
+        """Forward pass for the GNN."""
         
         if pathway_tensor is not None:
             pathway_groups_shifted = self._shift_individual_pathways(pathway_tensor, batch)
@@ -130,24 +113,30 @@ class ModularGNN(nn.Module):
             pathway_groups_shifted = self._shift_global_pathways(batch)
         else:
             pathway_groups_shifted = None
-            
-        if batch is not None:
-            batch_size = batch.unique().size(0)
-        for i, layer in enumerate(self.layers):
-            x = layer(x, edge_index, edge_attr=edge_attr, pathway_mode=self.layer_modes[i], pathway_tensor=pathway_groups_shifted,batch=batch)
     
-
+        if batch is not None:
+            batch_size = batch.unique().size(0)  # No changes here
+    
+        for i, layer in enumerate(self.layers):
+            x = layer(
+                x, 
+                edge_index, 
+                edge_attr=edge_attr, 
+                pathway_mode=self.layer_modes[i], 
+                pathway_tensor=pathway_groups_shifted, 
+                batch=batch
+            )
+    
         if self.pooling_mode == 'pathway':
             if pathway_groups_shifted is not None:
                 x = self.aggregate_by_pathway(x, edge_index, edge_attr, pathway_groups_shifted, batch=batch)
             else:
-                print("pathway tensor required for pathway specific pooling")
+                print("Pathway tensor required for pathway-specific pooling")
                 from torch_geometric.nn import global_mean_pool
                 if batch is None:
                     raise ValueError("Batch tensor is required for global pooling with multiple graphs")
                 x = global_mean_pool(x, batch)
                 x = x.mean(dim=1, keepdim=True)
-    
     
         elif self.pooling_mode == 'scalar':
             from torch_geometric.nn import global_mean_pool
