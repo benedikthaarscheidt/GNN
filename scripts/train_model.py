@@ -9,22 +9,139 @@ import os
 import networkx as nx
 import scripts
 from scripts import *
-import torchmetrics
 from torch import nn
-import optuna
-import models
-from optuna.integration import TensorBoardCallback
-from model_GNN import ModularPathwayConv, ModularGNN
-torch.set_printoptions(threshold=torch.inf)
-from model_ResNet import CombinedModel, ResNet, DrugMLP  
 from torch_geometric.loader import DataLoader
 from torch_geometric.data import Batch
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data.distributed import DistributedSampler
+from torchmetrics import Metric
+import pandas as pd 
+
+
+def get_data(n_fold=0, fp_radius=2):
+    def download_if_not_present(url, filepath):
+        """Download a file from a URL if it does not exist locally."""
+        if not os.path.exists(filepath):
+            print(f"File not found at {filepath}. Downloading...")
+            response = requests.get(url, stream=True)
+            os.makedirs(os.path.dirname(filepath), exist_ok=True)
+            with open(filepath, "wb") as file:
+                for chunk in response.iter_content(chunk_size=8192):
+                    file.write(chunk)
+            print("Download completed.")
+        else:
+            print(f"File already exists at {filepath}.")
+
+    # Step 1: Download and load RNA-seq data
+    zip_url = "https://cog.sanger.ac.uk/cmp/download/rnaseq_all_20220624.zip"
+    zip_filepath = "data/rnaseq.zip"
+    rnaseq_filepath = "data/rnaseq_normcount.csv"
+    if not os.path.exists(rnaseq_filepath):
+        download_if_not_present(zip_url, zip_filepath)
+        with zipfile.ZipFile(zip_filepath, "r") as zipf:
+            zipf.extractall("data/")
+    rnaseq = pd.read_csv(rnaseq_filepath, index_col=0)
+
+    # Step 2: Load gene network, hierarchies, and driver genes
+    hierarchies = pd.read_csv("data/gene_to_pathway_final_with_hierarchy.csv")
+    driver_genes = pd.read_csv("data/driver_genes_2.csv")['gene'].dropna()
+    gene_network = nx.read_edgelist("data/filtered_gene_network.edgelist", nodetype=str)
+    ensembl_to_hgnc = dict(zip(hierarchies['Ensembl_ID'], hierarchies['HGNC']))
+    mapped_gene_network = nx.relabel_nodes(gene_network, ensembl_to_hgnc)
+
+    # Step 3: Filter RNA-seq data and identify valid nodes
+    driver_columns = rnaseq.columns.isin(driver_genes)
+    filtered_rna = rnaseq.loc[:, driver_columns]
+    valid_nodes = set(filtered_rna.columns)  # Get valid nodes after filtering RNA-seq columns
+
+    # Step 4: Create edge tensors for the graph
+    edges_df = pd.DataFrame(
+        list(mapped_gene_network.edges(data="weight")),
+        columns=["source", "target", "weight"]
+    )
+    edges_df["weight"] = edges_df["weight"].fillna(1.0).astype(float)
+    filtered_edges = edges_df[
+        (edges_df["source"].isin(valid_nodes)) & (edges_df["target"].isin(valid_nodes))
+    ]
+    node_to_idx = {node: idx for idx, node in enumerate(valid_nodes)}
+    filtered_edges["source_idx"] = filtered_edges["source"].map(node_to_idx)
+    filtered_edges["target_idx"] = filtered_edges["target"].map(node_to_idx)
+    edge_index = torch.tensor(filtered_edges[["source_idx", "target_idx"]].values.T, dtype=torch.long)
+    edge_attr = torch.tensor(filtered_edges["weight"].values, dtype=torch.float32)
+
+    # Step 5: Process the hierarchy to create pathway groups
+    filtered_hierarchy = hierarchies[hierarchies["HGNC"].isin(valid_nodes)]
+    pathway_dict = {
+        gene: pathway.split(':', 1)[1].split('[', 1)[0].strip() if isinstance(pathway, str) and ':' in pathway else None
+        for gene, pathway in zip(filtered_hierarchy['HGNC'], filtered_hierarchy['Level_1'])
+    }
+    grouped_pathway_dict = {}
+    for gene, pathway in pathway_dict.items():
+        if pathway:
+            grouped_pathway_dict.setdefault(pathway, []).append(gene)
+    pathway_groups = {
+        pathway: [node_to_idx[gene] for gene in genes if gene in node_to_idx]
+        for pathway, genes in grouped_pathway_dict.items()
+    }
+    # Convert to padded tensor
+    pathway_tensors = pad_sequence(
+        [torch.tensor(indices, dtype=torch.long) for indices in pathway_groups.values()], 
+        batch_first=True, 
+        padding_value=-1  # Use -1 as padding
+    )
+
+    # Step 6: Create cell-line graphs
+    tensor_exp = torch.tensor(filtered_rna.to_numpy())
+    cell_dict = {cell: tensor_exp[i] for i, cell in enumerate(filtered_rna.index.to_numpy())}
+    graph_data_list = {}
+    for cell, x in cell_dict.items():
+        if x.ndim == 2 and x.shape[0] == 1:
+            x = x.T
+        elif x.ndim == 1:
+            x = x.unsqueeze(1)
+        graph_data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr)
+        graph_data.y = None
+        graph_data.cell_line = cell
+        graph_data_list[cell] = graph_data
+
+    # Step 7: Load drug data
+    smile_dict = pd.read_csv("data/smiles.csv", index_col=0)
+    fp = scripts.FingerprintFeaturizer(R=fp_radius)
+    drug_dict = fp(smile_dict.iloc[:, 1], smile_dict.iloc[:, 0])
+
+    # Step 8: Load IC50 data and filter for valid cell lines and drugs
+    data = pd.read_csv("data/GDSC1.csv", index_col=0)
+    data = data.query("SANGER_MODEL_ID in @cell_dict.keys() & DRUG_ID in @drug_dict.keys()")
+
+    # Step 9: Split the data into folds for cross-validation
+    unique_cell_lines = data["SANGER_MODEL_ID"].unique()
+
+    np.random.seed(420)
+    np.random.shuffle(unique_cell_lines)
+    folds = np.array_split(unique_cell_lines, 10)
+    train_idxs = list(range(10))
+    train_idxs.remove(n_fold)
+    validation_idx = np.random.choice(train_idxs)
+    train_idxs.remove(validation_idx)
+    train_lines = np.concatenate([folds[idx] for idx in train_idxs])
+    validation_lines = folds[validation_idx]
+    test_lines = folds[n_fold]
+
+    train_data = data.query("SANGER_MODEL_ID in @train_lines")
+
+    validation_data = data.query("SANGER_MODEL_ID in @validation_lines")
+    test_data = data.query("SANGER_MODEL_ID in @test_lines")
+
+    # Step 10: Build the datasets for training, validation, and testing
+    train_dataset = scripts.OmicsDataset(graph_data_list, drug_dict, train_data)
+    validation_dataset = scripts.OmicsDataset(graph_data_list, drug_dict, validation_data)
+    test_dataset = scripts.OmicsDataset(graph_data_list, drug_dict, test_data)
+
+    return train_dataset, validation_dataset, test_dataset, pathway_tensors
+
 
 def custom_collate_fn(batch):
-    
     try:
         cell_graphs = [item[0] for item in batch if item[0] is not None]  
         drug_vectors = torch.stack([item[1] for item in batch if item[1] is not None])  
@@ -32,6 +149,9 @@ def custom_collate_fn(batch):
         cell_ids = torch.stack([item[3] for item in batch if item[3] is not None]) 
         drug_ids = torch.stack([item[4] for item in batch if item[4] is not None]) 
 
+        # Ensure cell_ids and drug_ids are long tensors (integers)
+        cell_ids = cell_ids.long()
+        drug_ids = drug_ids.long()
 
         cell_graph_batch = Batch.from_data_list(cell_graphs)  
         return cell_graph_batch, drug_vectors, targets, cell_ids, drug_ids
@@ -43,171 +163,178 @@ def custom_collate_fn(batch):
 
 
 def evaluate_step(model, loader, metrics, device):
-
+    print("[INFO] Starting evaluation step")
     metrics.increment()
-    model.eval() 
+    model.eval()
+    
+    with torch.no_grad():
+        for batch_idx, batch in enumerate(loader, start=1):
+            try:
+                # Unpack the batch
+                cell_graph_batch, drug_tensor_batch, target_batch, cell_id_batch, drug_id_batch = batch
 
-    with torch.no_grad(): 
-        for batch in loader:
+                # Move data to the device
+                cell_graph = cell_graph_batch.to(device)
+                drug_vector = drug_tensor_batch.to(device)
+                targets = target_batch.to(device)
+                cell_ids = cell_id_batch.to(device).long()
+                drug_ids = drug_id_batch.to(device).long()
 
-            cell_graph, drug_vector, targets = batch  
-            cell_graph = cell_graph.to(device)  # Batch object (PyG Data)
-            drug_vector = drug_vector.to(device)  # Tensor
-            targets = targets.to(device)  # Tensor
+                # Forward pass through the CombinedModel
+                outputs = model(cell_graph, drug_vector)
 
+                # Debugging outputs and shapes
+                print(f"[DEBUG] Raw Outputs Shape: {outputs.shape}")
 
-            outputs = model(cell_graph, drug_vector)
+                # Ensure outputs have consistent dimensions
+                outputs = outputs.view(-1)  # Flatten into 1D tensor for batch processing
+                targets = targets.view(-1)
+                cell_ids = cell_ids.view(-1)
+                drug_ids = drug_ids.view(-1)
 
-            metrics.update(
-                outputs.squeeze(),
-                targets.squeeze()
-            )
+                # Guard against empty or invalid tensors
+                if outputs.numel() == 0 or targets.numel() == 0 or cell_ids.numel() == 0 or drug_ids.numel() == 0:
+                    print("[WARNING] Empty or invalid tensors encountered. Skipping batch.")
+                    continue
 
+                print(f"[DEBUG] Final Outputs Shape: {outputs.shape}")
+                print(f"[DEBUG] Targets Shape: {targets.shape}")
+                print(f"[DEBUG] Cell IDs Shape: {cell_ids.shape}, Drug IDs Shape: {drug_ids.shape}")
+
+                # Update metrics
+                metrics.update(outputs, targets, cell_lines=cell_ids, drugs=drug_ids)
+
+            except Exception as e:
+                print(f"[ERROR] Batch {batch_idx} encountered an error: {e}")
+                continue
+
+    # Compute final metrics
     return {key: value.item() for key, value in metrics.compute().items()}
 
-def train_step(model, optimizer, loader, config, device):
-    print(f"Running on device: {device}")  # Verify the GPU being used for training
-    loss_fn = nn.MSELoss()
-    total_loss = 0
-    model.train()
-    i = 0
-    for batch in loader:
-        i += 1
-        try:
-            cell_graph_batch, drug_tensor_batch, target_batch, cell_id_batch, drug_id_batch = batch
-        except Exception as e:
-            print(f"Error unpacking batch: {e}")
-            print(f"Batch contents: {batch}")
-            continue
-
-        cell_graph = cell_graph_batch.to(device)
-        drug_vector = drug_tensor_batch.to(device)
-        targets = target_batch.to(device)
-
-        optimizer.zero_grad()
-
-        outputs = model(cell_graph, drug_vector)
-
-        loss = loss_fn(outputs.squeeze(), targets.squeeze())
-        loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), config["optimizer"]["clip_norm"])
-        optimizer.step()
-
-        total_loss += loss.item()
-        print(f"Batch {i}, Loss: {loss.item():.4f}")
-
-    return total_loss / len(loader)
-
-def init_ddp(config, model):
-
-    local_rank = config["env"]["local_rank"]
-
-    # Manually set the environment variables for DistributedDataParallel
-    os.environ['MASTER_ADDR'] = 'localhost'  # Master node address
-    os.environ['MASTER_PORT'] = '12345'     # Communication port
-    os.environ['WORLD_SIZE'] = str(config["env"]["world_size"])  # Total number of processes (GPUs)
-    os.environ['RANK'] = str(config["env"]["rank"])  # Global rank
-    os.environ['LOCAL_RANK'] = str(local_rank)  # Local rank
-
-    # Set the device for the current process (GPU)
-    torch.cuda.set_device(local_rank)
-
-    # Move model to the correct GPU for this process
-    model = model.to(f'cuda:{local_rank}')
-
-    # Initialize the process group
-    dist.init_process_group(backend='nccl', init_method='env://')
-
-    # Wrap the model in DistributedDataParallel (DDP)
-    model = DDP(model, device_ids=[local_rank])
-
-    return model
-def train_model(config, train_dataset, validation_dataset=None, callback_epoch=None):
-    """Main training function for the combined GNN, ResNet, and DrugMLP model."""
-    # Force single GPU setup (disable multi-GPU)
-    config["env"]["world_size"] = 1  # Use only one GPU
-    config["env"]["rank"] = 0        # Global rank for the first GPU
-    config["env"]["local_rank"] = 0   # Local rank for the first GPU (GPU 0)
 
 
-    train_sampler = DistributedSampler(train_dataset, num_replicas=config["env"]["world_size"], rank=config["env"]["rank"])
 
-    # Set up DataLoader with the sampler
-    train_loader = DataLoader(
-        train_dataset,
-        batch_size=config["optimizer"]["batch_size"],
-        shuffle=False,  # Don't shuffle, since DistributedSampler handles it
-        drop_last=True,
-        collate_fn=custom_collate_fn,
-        num_workers=8,  # Parallelize data loading
-        sampler=train_sampler  # Use the sampler for distributed loading
-    )
+
+class EarlyStop():
+    def __init__(self, max_patience, maximize=False):
+        self.maximize=maximize
+        self.max_patience = max_patience
+        self.best_loss = None
+        self.patience = max_patience + 0
+    def __call__(self, loss):
+        if self.best_loss is None:
+            self.best_loss = loss
+            self.patience = self.max_patience + 0
+        elif loss < self.best_loss:
+            self.best_loss = loss
+            self.patience = self.max_patience + 0
+        else:
+            self.patience -= 1
+        return not bool(self.patience)
     
-    val_loader = None
-    if validation_dataset is not None:
-        # Set up DistributedSampler for validation dataset
-        val_sampler = DistributedSampler(validation_dataset, num_replicas=config["env"]["world_size"], rank=config["env"]["rank"], shuffle=False)
+class GroupwiseMetric(Metric):
+    def __init__(self, metric,
+                 grouping = "cell_lines",
+                 average = "macro",
+                 nan_ignore=False,
+                 alpha=0.00001,
+                 residualize = False,
+                 **kwargs):
+        super().__init__(**kwargs)
+        self.grouping = grouping
+        self.metric = metric
+        self.average = average
+        self.nan_ignore = nan_ignore
+        self.residualize = residualize
+        self.alpha = alpha
+        self.add_state("target", default=torch.tensor([]))
+        self.add_state("pred", default=torch.tensor([]))
+        self.add_state("drugs", default=torch.tensor([]))
+        self.add_state("cell_lines", default=torch.tensor([]))
+    def get_residual(self, X, y):
+        w = self.get_linear_weights(X, y)
+        r = y-(X@w)
+        return r
+    def get_linear_weights(self, X, y):
+        A = X.T@X
+        Xy = X.T@y
+        n_features = X.size(1)
+        A.flatten()[:: n_features + 1] += self.alpha
+        return torch.linalg.solve(A, Xy).T
+    def get_residual_ind(self, y, drug_id, cell_id, alpha=0.001):
+        X = torch.cat([y.new_ones(y.size(0), 1),
+                       torch.nn.functional.one_hot(drug_id),
+                       torch.nn.functional.one_hot(cell_id)], 1).float()
+        return self.get_residual(X, y)
+
+    def compute(self) -> Tensor:
+        if self.grouping == "cell_lines":
+            grouping = self.cell_lines
+        elif self.grouping == "drugs":
+            grouping = self.drugs
+        metric = self.metric
+        if not self.residualize:
+            y_obs = self.target
+            y_pred = self.pred
+        else:
+            y_obs = self.get_residual_ind(self.target, self.drugs, self.cell_lines)
+            y_pred = self.get_residual_ind(self.pred, self.drugs, self.cell_lines)
+        average = self.average
+        nan_ignore = self.nan_ignore
+        unique = grouping.unique()
+        proportions = []
+        metrics = []
+        for g in unique:
+            is_group = grouping == g
+            metrics += [metric(y_obs[grouping == g], y_pred[grouping == g])]
+            proportions += [is_group.sum()/len(is_group)]
+        if average is None:
+            return torch.stack(metrics)
+        if (average == "macro") & (nan_ignore):
+            return torch.nanmean(y_pred.new_tensor([metrics]))
+        if (average == "macro") & (not nan_ignore):
+            return torch.mean(y_pred.new_tensor([metrics]))
+        if (average == "micro") & (not nan_ignore):
+            return (y_pred.new_tensor([proportions])*y_pred.new_tensor([metrics])).sum()
+        else:
+            raise NotImplementedError
     
-        val_loader = DataLoader(
-            validation_dataset,
-            batch_size=config["optimizer"]["batch_size"],
-            shuffle=False,  # Don't shuffle, since DistributedSampler handles it
-            drop_last=True,
-            collate_fn=custom_collate_fn,
-            num_workers=8,  # Parallelize data loading
-            sampler=val_sampler  # Use the sampler for distributed loading
-        )
-    device = torch.device(config["env"]["device"])
+    def update(self, preds: Tensor, target: Tensor,  drugs: Tensor,  cell_lines: Tensor) -> None:
 
-    # Initialize the Combined Model
-    gnn_model = ModularGNN(**config["gnn"])
-    drug_mlp = DrugMLP(input_dim=config["drug"]["input_dim"], embed_dim=config["drug"]["embed_dim"])
-    resnet = ResNet(embed_dim=config["drug"]["embed_dim"], hidden_dim=config["resnet"]["hidden_dim"])
-    combined_model = CombinedModel(gnn=gnn_model, drug_mlp=drug_mlp, resnet=resnet)
-    
-    if torch.cuda.is_available():
-        n_gpus = torch.cuda.device_count()
-        if n_gpus > 1:
-            print(f"number of GPUs:{n_gpus}")
-            combined_model = init_ddp(config, combined_model)  # Initialize DDP if multiple GPUs are available
-    
-    combined_model.to(device)
+        self.target = torch.cat([self.target, target])
+        self.pred = torch.cat([self.pred, preds])
+        self.drugs = torch.cat([self.drugs, drugs]).long()
+        self.cell_lines = torch.cat([self.cell_lines, cell_lines]).long()
 
-    optimizer = torch.optim.Adam(combined_model.parameters(), lr=config["optimizer"]["learning_rate"])
-    lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, factor=0.5, patience=5)
-    early_stop = EarlyStop(config["optimizer"]["stopping_patience"])
 
-    if not hasattr(combined_model, 'lazy_initialized') or not combined_model.lazy_initialized:
-        test_instance = next(iter(train_loader))
-        cell_graph_batch, drug_vector, targets, cell_ids, drug_ids = test_instance
-        cell_graph_batch = cell_graph_batch.to(device)
-        drug_vector = drug_vector.to(device)
-        with torch.no_grad():
-            combined_model(cell_graph_batch, drug_vector)
-        combined_model.lazy_initialized = True  # Track initialization state
-        print("Lazy layers initialized successfully with a real batch instance.")
 
-    metrics = torchmetrics.MetricTracker(torchmetrics.MetricCollection({
-        "R_cellwise_residuals": GroupwiseMetric(metric=torchmetrics.functional.pearson_corrcoef, grouping="drugs", average="macro", residualize=True),
-        "R_cellwise": GroupwiseMetric(metric=torchmetrics.functional.pearson_corrcoef, grouping="cell_lines", average="macro", residualize=False),
-        "MSE": torchmetrics.MeanSquaredError()
-    }))
-    metrics.to(device)
 
-    best_val_target = None
-    for epoch in range(config["env"]["max_epochs"]):
-        train_loss = train_step(combined_model, optimizer, train_loader, config, device)
-        print(f"Epoch {epoch + 1}: Train Loss = {train_loss:.4f}")
 
-        if val_loader is not None:
-            validation_metrics = evaluate_step(combined_model, val_loader, metrics, device)
-            best_val_target = validation_metrics.get('R_cellwise_residuals', None)
 
-        if callback_epoch is not None:
-            callback_epoch(epoch, best_val_target)
 
-        if early_stop(train_loss):
-            print(f"Early stopping at epoch {epoch + 1}.")
-            break
 
-    return best_val_target, combined_model
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

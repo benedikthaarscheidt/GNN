@@ -17,7 +17,7 @@ class OmicsDataset(Dataset):
         return len(self.data)
 
     def __getitem__(self, idx):
-       
+        idx=int(idx)
         instance = self.data.iloc[idx]
         cell_id = instance["SANGER_MODEL_ID"]
         drug_id = instance["DRUG_ID"]

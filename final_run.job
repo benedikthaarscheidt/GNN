@@ -1,25 +1,27 @@
 #!/bin/bash
 
+#!/bin/bash
 #SBATCH --partition=gpu                # Use the GPU partition
-#SBATCH --nodes=1                       # Run on a single node
-#SBATCH --ntasks=1                      # Number of tasks
-#SBATCH --cpus-per-task=100              # Number of CPU cores per task
-#SBATCH --gpus=1                        # Number of GPUs
-#SBATCH --mem=164G                      # Memory allocation
-#SBATCH --time=1-00:00                  # Maximum runtime (1 day)
+#SBATCH --nodes=1                      # Run on a single node
+#SBATCH --ntasks=1                     # DDP only needs 1 task with multiple processes
+#SBATCH --cpus-per-task=80             # Number of CPU cores for the task (10 per GPU if you have 4 GPUs)
+#SBATCH --gpus=3                       # Number of GPUs requested
+#SBATCH --mem=200G                     # Memory allocation
+#SBATCH --time=5-00:00                 # Maximum runtime (1 day)
 #SBATCH --chdir=/work/haarscheid/cancer_baseline2/cancer_baseline/Graphs  # Working directory
-#SBATCH --mail-type=ALL                 # Email notifications for job start, end, and failure
-#SBATCH --mail-user=haarscheid@uni-potsdam.de  # Your email address
-#SBATCH --output=slurm-%j.out           # Output file name where %j is the job ID
+#SBATCH --mail-type=ALL                # Email notifications for job start, end, and failure
+#SBATCH --mail-user=haarscheid@uni-potsdam.de  # Your email address for notifications
+#SBATCH --output=slurm-%j.out         # Standard output and error log file where %j is the job ID
 
-# Load necessary modules (adjust based on your environment)
-module load lang/conda/24.1.2
+#Load necessary modules
+module load lang/Anaconda3/2024.02-1
 
-# Activate your Conda environment
+#Activate your Conda environment
 source activate GNN3
 
-# Execute the Jupyter notebook as a Python script using nbconvert
-jupyter nbconvert --to notebook --execute --inplace final_run.ipynb
+#Debugging and environment info
+echo "SLURM_JOB_NODELIST: $SLURM_JOB_NODELIST"
+echo "SLURM_GPUS_ON_NODE: $SLURM_GPUS_ON_NODE"
+echo "CUDA_VISIBLE_DEVICES: $CUDA_VISIBLE_DEVICES"
 
-# Alternatively, you can specify output log as follows:
-# jupyter nbconvert --to notebook --execute --inplace your_notebook.ipynb --stdout > output.log
+python final_run_v2.py

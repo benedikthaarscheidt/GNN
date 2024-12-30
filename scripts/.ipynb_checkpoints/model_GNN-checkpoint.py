@@ -18,6 +18,7 @@ class ModularPathwayConv(MessagePassing):
             raise ValueError("The 'batch' parameter is required for batched processing but is None.")
 
         x = x.float()
+        #print(x.shape)
         x = self.linear(x)
 
         if not pathway_mode or pathway_tensor is None:
@@ -28,6 +29,7 @@ class ModularPathwayConv(MessagePassing):
         return x_updated
 
     def _process_pathways(self, x, edge_index, edge_attr, pathway_tensors, batch):
+
         x_updated = torch.zeros_like(x)  # This stays on the same device as x
         
         for pathway_index in range(pathway_tensors.size(0)):
@@ -126,7 +128,8 @@ class ModularGNN(nn.Module):
                 pathway_tensor=pathway_groups_shifted, 
                 batch=batch
             )
-    
+        #print(f"x shape before flattening:{x.shape}")
+        # Handling different pooling modes
         if self.pooling_mode == 'pathway':
             if pathway_groups_shifted is not None:
                 x = self.aggregate_by_pathway(x, edge_index, edge_attr, pathway_groups_shifted, batch=batch)
@@ -135,27 +138,34 @@ class ModularGNN(nn.Module):
                 from torch_geometric.nn import global_mean_pool
                 if batch is None:
                     raise ValueError("Batch tensor is required for global pooling with multiple graphs")
-                x = global_mean_pool(x, batch)
-                x = x.mean(dim=1, keepdim=True)
+                # Perform global mean pooling across all nodes for each graph
+                x = global_mean_pool(x, batch)  # Output shape: [batch_size, output_dim]
     
         elif self.pooling_mode == 'scalar':
             from torch_geometric.nn import global_mean_pool
             if batch is None:
                 raise ValueError("Batch tensor is required for global pooling with multiple graphs")
-            x = global_mean_pool(x, batch)
-            x = x.mean(dim=1, keepdim=True)
+            x = global_mean_pool(x, batch)  # Global mean pooling across graphs
     
         elif self.pooling_mode is None:
-            from torch_geometric.nn import global_mean_pool
             if batch is None:
                 raise ValueError("Batch tensor is required to flatten node embeddings per graph")
-            x = global_mean_pool(x, batch)
-            batch_size = x.size(0)
-            x = x.view(batch_size, -1)
-    
+            
+            # Calculate the number of nodes per graph
+            num_nodes_per_graph = torch.bincount(batch)  # Gives the count of nodes per graph
+            if not torch.all(num_nodes_per_graph == num_nodes_per_graph[0]):
+                raise ValueError("All graphs must have the same number of nodes when pooling is 'None'")
+            
+            # Flatten the node embeddings for each graph
+            batch_size = batch.max().item() + 1  # Total number of graphs
+            num_nodes = num_nodes_per_graph[0].item()  # Number of nodes per graph
+            x = x.view(batch_size, num_nodes * x.size(-1))  # Concatenate node features for each graph
+        
+        
+
         else:
             raise ValueError(f"Unsupported pooling_mode: {self.pooling_mode}")
-    
+        #print(f"x shape after flattening:{x.shape}")
         return x
     
     def aggregate_by_pathway(self, x, edge_index, edge_attr, pathway_tensors, batch):

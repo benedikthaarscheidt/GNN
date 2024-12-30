@@ -18,3 +18,4 @@ E0000 00:00:1734382088.488786 3206779 cuda_dnn.cc:8310] Unable to register cuDNN
 E0000 00:00:1734382088.493309 3206779 cuda_blas.cc:1418] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
 2024-12-16 21:48:08.510030: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CPU instructions in performance-critical operations.
 To enable the following instructions: AVX2 FMA, in other operations, rebuild TensorFlow with the appropriate compiler flags.
+slurmstepd: error: *** JOB 901594 ON n-hpc-gz6 CANCELLED AT 2024-12-17T15:02:16 ***
