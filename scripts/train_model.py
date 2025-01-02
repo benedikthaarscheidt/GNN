@@ -179,7 +179,6 @@ def evaluate_step12222(model, loader, metrics, device):
     return {it[0]:it[1].item() for it in metrics.compute().items()}
 
 def evaluate_step(model, loader, metrics, device):
-    print("[INFO] Starting evaluation step")
     metrics.increment()
     model.eval()
     with torch.no_grad():
@@ -221,7 +220,7 @@ def evaluate_step(model, loader, metrics, device):
         print("[DEBUG] MetricTracker internal metric collection:", metrics.base)
         print("[DEBUG] Registered Metrics:", metrics.base.keys())
         print("[INFO] Computing metrics")
-        ## this is what doesnt work  for some reason the computation does not proceed and the comoute method is not called (no debug statement printed)
+        ## this is what doesnt work  for some reason the computation does not proceed and the compute method is not called (no debug statement printed)
         local_metrics = {it[0]:it[1].item() for it in metrics.compute().items()}
         metrics.reset() 
         print("[INFO] Metrics computed successfully")

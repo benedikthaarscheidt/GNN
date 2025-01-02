@@ -11,6 +11,7 @@ from torch.utils.data.distributed import DistributedSampler
 import torchmetrics
 from scripts import *
 import scripts
+from tqdm import tqdm
 import numpy as np
 import pandas as pd 
 from torch import nn
@@ -50,7 +51,7 @@ def setup_config(pathway_groups):
             "embed_dim": 44
         },
         "optimizer": {
-            "learning_rate": 1e-5,
+            "learning_rate": 1e-4,
             "batch_size": 8,  
             "clip_norm": 1.0,
             "stopping_patience": 10,
@@ -109,31 +110,27 @@ def train_step(model, optimizer, train_data, config, device):
     loss_fn = nn.MSELoss()
     total_loss = 0
     model.train()
-
-    for batch_idx, batch in enumerate(train_data, start=1):
-        try:
-            cell_graph_batch, drug_tensor_batch, target_batch, _, _ = batch
-
-            cell_graph = cell_graph_batch.to(device)
-            drug_vector = drug_tensor_batch.to(device)
-            targets = target_batch.to(device)
-
-            optimizer.zero_grad()
-
-            outputs = model(cell_graph, drug_vector)
-            outputs = outputs.view(-1)
-            targets = targets.view(-1)
-
-            loss = loss_fn(outputs, targets)
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), config["optimizer"]["clip_norm"])
-            optimizer.step()
-
-            total_loss += loss.item()
-        except Exception as e:
-            print(f"Error in batch {batch_idx}: {e}")
-            continue
-
+    with tqdm(total=len(train_data), desc="Training", unit="batch", leave=False) as pbar:
+        for batch_idx, batch in enumerate(train_data, start=1):
+            try:
+                cell_graph_batch, drug_tensor_batch, target_batch, _, _ = batch
+                cell_graph = cell_graph_batch.to(device)
+                drug_vector = drug_tensor_batch.to(device)
+                targets = target_batch.to(device)
+                optimizer.zero_grad()
+                outputs = model(cell_graph, drug_vector)
+                outputs = outputs.view(-1)
+                targets = targets.view(-1)
+                loss = loss_fn(outputs, targets)
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(model.parameters(), config["optimizer"]["clip_norm"])
+                optimizer.step()
+                total_loss += loss.item()
+                pbar.update(1)
+                pbar.set_postfix({"Batch Loss": loss.item()})
+            except Exception as e:
+                print(f"Error in batch {batch_idx}: {e}")
+                continue
     return total_loss / len(train_data)
 
 class Trainer:
@@ -168,7 +165,6 @@ class Trainer:
             train_loss = train_step(self.model, self.optimizer, self.train_data, self.config, self.rank)
             if self.rank == 0:
                 print(f"Epoch {epoch}: Training Loss = {train_loss:.4f}")
-            
             if self.rank == 0:
                 validation_metrics = self.evaluate_metrics(self.val_data)
                 print(f"Validation Metrics: {validation_metrics}")
@@ -189,7 +185,6 @@ class Trainer:
         if self.rank == 0:
             metrics_output = scripts.evaluate_step(self.model, loader, self.metrics, device)
             #metrics_output = scripts.evaluate_step12222(self.model,loader, self.metrics, device)
-            print("back")
             return metrics_output
         else:
             return None
@@ -231,9 +226,9 @@ def main(rank: int, world_size: int):
         train_set, val_set, test_set, pathway_groups, model, optimizer, config = load_train_objs()
         
         #### Subset datasets for faster training and debugging ####
-        train_subset = get_subset(train_set, fraction=0.05)
-        val_subset = get_subset(val_set, fraction=0.05)
-        test_subset = get_subset(test_set, fraction=0.05)
+        train_subset = get_subset(train_set, fraction=0.001)
+        val_subset = get_subset(val_set, fraction=0.001)
+        test_subset = get_subset(test_set, fraction=0.001)
         ###########################################################
         
         # Step 3: Prepare the distributed data loaders

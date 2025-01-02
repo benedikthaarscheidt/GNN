@@ -179,7 +179,6 @@ def evaluate_step12222(model, loader, metrics, device):
     return {it[0]:it[1].item() for it in metrics.compute().items()}
 
 def evaluate_step(model, loader, metrics, device):
-    print("[INFO] Starting evaluation step")
     metrics.increment()
     model.eval()
     with torch.no_grad():
