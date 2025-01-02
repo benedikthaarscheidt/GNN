@@ -21,14 +21,12 @@ import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 def ddp_setup(rank, world_size):
-    """Setup the distributed environment for DDP."""
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = "12355"
     torch.cuda.set_device(rank)
     dist.init_process_group(backend='nccl', rank=rank, world_size=world_size)
     
 def setup_config(pathway_groups):
-    """Return the configuration dictionary"""
     config = {
         "gnn": {
             "input_dim": 1,
@@ -37,7 +35,7 @@ def setup_config(pathway_groups):
             "pathway_groups": pathway_groups, 
             "layer_modes": [True, False, True],
             "pooling_mode": "pathway",
-            "aggr_modes": ["sum", "max", "mean"],
+            "aggr_modes": ["mean", "mean", "mean"],
             "num_pathways_per_instance": 44
         },
         "resnet": {
@@ -88,7 +86,7 @@ def load_train_objs():
           embed_dim=config["resnet"]["embed_dim"],
           hidden_dim=config["resnet"]["hidden_dim"]
     )
-    model = scripts.CombinedModel(gnn,drug_mlp,resnet)  # Assuming CombinedModel is defined in scripts
+    model = scripts.CombinedModel(gnn,drug_mlp,resnet) 
     model.apply(init_weights)
     optimizer = torch.optim.Adam(model.parameters(), lr=config['optimizer']['learning_rate'])
     return train_set,val_set,test_set,pathway_groups, model, optimizer, config
