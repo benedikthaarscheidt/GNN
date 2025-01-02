@@ -12,6 +12,15 @@ class ModularPathwayConv(MessagePassing):
         self.out_channels = out_channels
         self.num_pathways_per_instance=num_pathways_per_instance
         self.linear = torch.nn.Linear(in_channels, out_channels)
+        self.batch_norm = nn.BatchNorm1d(out_channels)
+        self.alpha = nn.Parameter(torch.tensor(0.001))
+        self.dropout = nn.Dropout(p=0.1) 
+        self.edge_attention = nn.Sequential(
+            nn.Linear(1, 32),
+            nn.ReLU(),
+            nn.Linear(32, 1),
+            nn.Sigmoid()
+        )
 
     def forward(self, x, edge_index, edge_attr=None, pathway_mode=False, pathway_tensor=None, batch=None):
         if batch is None:
@@ -20,6 +29,8 @@ class ModularPathwayConv(MessagePassing):
         x = x.float()
         #print(x.shape)
         x = self.linear(x)
+        x = self.batch_norm(x)
+        x = self.dropout(x)
 
         if not pathway_mode or pathway_tensor is None:
             x_updated = (self.propagate(edge_index, x=x, edge_attr=edge_attr) + x)
@@ -29,7 +40,6 @@ class ModularPathwayConv(MessagePassing):
         return x_updated
 
     def _process_pathways(self, x, edge_index, edge_attr, pathway_tensors, batch):
-
         x_updated = torch.zeros_like(x)  # This stays on the same device as x
         
         for pathway_index in range(pathway_tensors.size(0)):
@@ -37,7 +47,8 @@ class ModularPathwayConv(MessagePassing):
             nodes = nodes[nodes >= 0] 
             if nodes.numel() == 0:
                 continue
-    
+                
+            
             sub_edge_index, _ = subgraph(nodes, edge_index, relabel_nodes=False)
             sub_edge_attr = None
             if edge_attr is not None:
@@ -45,15 +56,19 @@ class ModularPathwayConv(MessagePassing):
                 sub_edge_attr = edge_attr[edge_mask]
     
             x_propagated = self.propagate(sub_edge_index, x=x, edge_attr=sub_edge_attr)
-            x_updated[nodes] += (x_propagated[nodes] + x[nodes])
+            
+            x_updated[nodes] = (x_propagated[nodes] + x[nodes])
             
         return x_updated
 
            
     def message(self, x_j, edge_attr=None):
-        if edge_attr is not None: 
-            return x_j * edge_attr.view(-1, 1)
-        return x_j
+        if edge_attr is not None:
+            edge_attr=edge_attr * self.alpha
+            attention_scores = self.edge_attention(edge_attr.view(-1, 1))
+            return x_j * attention_scores
+        else:
+            return x_j 
 
 
 class ModularGNN(nn.Module):
