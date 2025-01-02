@@ -15,6 +15,9 @@ import numpy as np
 import pandas as pd 
 from torch import nn
 from torch.utils.data import Subset 
+from torchmetrics import MetricTracker
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 def ddp_setup(rank, world_size):
     """Setup the distributed environment for DDP."""
@@ -31,9 +34,9 @@ def setup_config(pathway_groups):
             "hidden_dim": 128,
             "output_dim": 1,
             "pathway_groups": pathway_groups, 
-            "layer_modes": [True, True, True],
-            "pooling_mode": "none",
-            "aggr_modes": ["sum", "sum", "sum"],
+            "layer_modes": [True, False, True],
+            "pooling_mode": "pathway",
+            "aggr_modes": ["mean", "max", "mean"],
             "num_pathways_per_instance": 44
         },
         "resnet": {
@@ -47,8 +50,8 @@ def setup_config(pathway_groups):
             "embed_dim": 44
         },
         "optimizer": {
-            "learning_rate": 1e-2,
-            "batch_size": 8,  
+            "learning_rate": 1e-5,
+            "batch_size": 4,  
             "clip_norm": 1.0,
             "stopping_patience": 10,
         },
@@ -57,7 +60,7 @@ def setup_config(pathway_groups):
             "world_size": torch.cuda.device_count(),  
             "local_rank": 0,  
             "master_addr": "localhost",  
-            "master_port": "12345",  
+            "master_port": "12356",  
             "save_every": 10
         }
     }
@@ -85,6 +88,7 @@ def load_train_objs():
           hidden_dim=config["resnet"]["hidden_dim"]
     )
     model = scripts.CombinedModel(gnn,drug_mlp,resnet)  # Assuming CombinedModel is defined in scripts
+    model.apply(init_weights)
     optimizer = torch.optim.Adam(model.parameters(), lr=config['optimizer']['learning_rate'])
     return train_set,val_set,test_set,pathway_groups, model, optimizer, config
 
@@ -95,101 +99,136 @@ def prepare_dataloader(dataset: Dataset, batch_size: int):
         batch_size=batch_size,
         pin_memory=True,
         shuffle=False,
-        sampler=DistributedSampler(dataset)
+        sampler=DistributedSampler(dataset),
+        drop_last=True
     )
 
 
 
 def train_step(model, optimizer, train_data, config, device):
-
     loss_fn = nn.MSELoss()
     total_loss = 0
-    model.train()  # Set model to training mode
+    model.train()
 
-    for batch_idx, batch in enumerate(train_data, start=1):  # Batch counter starts from 1
+    for batch_idx, batch in enumerate(train_data, start=1):
         try:
             # Unpack the batch
-            cell_graph_batch, drug_tensor_batch, target_batch, cell_id_batch, drug_id_batch = batch
+            cell_graph_batch, drug_tensor_batch, target_batch, _, _ = batch
+
+            # Move data to the device
+            cell_graph = cell_graph_batch.to(device)
+            drug_vector = drug_tensor_batch.to(device)
+            targets = target_batch.to(device)
+
+            optimizer.zero_grad()
+
+            # Forward pass through the CombinedModel
+            outputs = model(cell_graph, drug_vector)
+            outputs = outputs.view(-1)
+            targets = targets.view(-1)
+
+            # Compute loss
+            loss = loss_fn(outputs, targets)
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), config["optimizer"]["clip_norm"])
+            optimizer.step()
+
+            total_loss += loss.item()
         except Exception as e:
-            print(f"Error unpacking batch: {e}")
-            print(f"Batch contents: {batch}")
+            print(f"Error in batch {batch_idx}: {e}")
             continue
-        
-        cell_graph = cell_graph_batch.to(device)
-        drug_vector = drug_tensor_batch.to(device)
-        targets = target_batch.to(device)
 
-        optimizer.zero_grad()
-        outputs = model(cell_graph, drug_vector)
-        
-        loss = nn.MSELoss()(outputs.squeeze(), targets.squeeze())
-        
-        loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), config["optimizer"]["clip_norm"])
-        optimizer.step()
-
-        total_loss += loss.item()
-
-        #print(f"Batch {batch_idx}/{len(train_data)}, Loss: {loss.item():.4f}", flush=True)
-
-    return total_loss / len(train_data)  
-
-
-def train_model(model, optimizer, train_data, val_data, epoch, rank, config):
-    device = torch.device(f'cuda:{rank}')
-    early_stop = scripts.EarlyStop(config["optimizer"]["stopping_patience"])
-
-    train_data.sampler.set_epoch(epoch)
-    train_loss = train_step(model, optimizer, train_data, config, device)
-
-    if rank == 0:  
-        print(f"Epoch {epoch + 1}: Train Loss = {train_loss:.4f}")
-
-    if val_data is not None:
-        metrics = scripts.GroupwiseMetric(metric=torchmetrics.functional.mean_squared_error)
-        validation_metrics = scripts.evaluate_step(model, val_data, metrics, device)
-        if rank == 0:
-            print(f"Validation Metrics: {validation_metrics}")
-
-    early_stop_signal = 0
-    if rank == 0 and early_stop(train_loss):
-        print(f"Early stopping at epoch {epoch + 1}.")
-        early_stop_signal = 1
-    
-    early_stop_signal_tensor = torch.tensor(early_stop_signal, device=device)  # Move tensor to device
-    dist.broadcast(early_stop_signal_tensor, src=0)  # Broadcast on the correct device
-    
-    if early_stop_signal_tensor.item() == 1:
-        return model
-
-    return model
+    return total_loss / len(train_data)
 
 class Trainer:
-    def __init__(self, model, train_data,val_data,test_data, optimizer, rank, save_every):
+    def __init__(self, model, train_data, val_data, test_data, optimizer, rank, save_every, config):
         self.rank = rank
         self.model = model.to(rank)
         self.train_data = train_data
-        self.val_data=val_data
-        self.test_data=test_data
+        self.val_data = val_data
+        self.test_data = test_data
         self.optimizer = optimizer
         self.save_every = save_every
+        self.config = config
         self.model = DDP(model, device_ids=[rank])
 
-    def train(self, config):
-        for epoch in range(config["env"]["max_epochs"]):
-            combined_model = train_model(self.model, self.optimizer, self.train_data,self.val_data, epoch, self.rank, config)
+        # Initialize the metric tracker with GroupwiseMetric
+        self.metrics = MetricTracker(torchmetrics.MetricCollection(
+            {"R_cellwise_residuals": scripts.GroupwiseMetric(
+                metric=torchmetrics.functional.pearson_corrcoef,
+                grouping="drugs",
+                average="macro",
+                residualize=True),
+             "R_cellwise": scripts.GroupwiseMetric(
+                metric=torchmetrics.functional.pearson_corrcoef,
+                grouping="cell_lines",
+                average="macro",
+                residualize=False),
+             "MSE": torchmetrics.MeanSquaredError()  
+            }))
+        self.metrics.to(rank)
+        self.early_stop = scripts.EarlyStop(config["optimizer"]["stopping_patience"])
+
+    def train(self):
+        for epoch in range(self.config["env"]["max_epochs"]):
+            # Train the model
+            train_loss = train_step(self.model, self.optimizer, self.train_data, self.config, self.rank)
+            if self.rank == 0:
+                print(f"Epoch {epoch}: Training Loss = {train_loss:.4f}")
+                
+            print("before eval")
+            # Validate the model
+            validation_metrics = self.evaluate_metrics(self.val_data)
+            if self.rank == 0:
+                print(f"Validation Metrics: {validation_metrics}")
+
+            # Save periodically
             if epoch % self.save_every == 0 and self.rank == 0:
                 print(f"[INFO] Checkpoint at Epoch {epoch}")
 
-    def test(self):
-            metrics = scripts.GroupwiseMetric(metric=torchmetrics.functional.mean_squared_error)
-            device = torch.device(f'cuda:{self.rank}')
-            test_metrics = scripts.evaluate_step(self.model, self.test_data, metrics, device)
-            if self.rank == 0:
-                print(f"Test Metrics: {test_metrics}")
+            # Early stopping check
+            if self.early_stop(train_loss):
+                print(f"Early stopping at epoch {epoch}.")
+                break
+                
+    def evaluate_metrics(self, loader):
+        print("[INFO] Starting evaluate_metrics")
+        
+        device = torch.device(f"cuda:{self.rank}")
+        print("[INFO] Starting evaluation step")
+        try:
+            metrics_output = scripts.evaluate_step(self.model, loader, self.metrics, device, rank=self.rank)
+            #metrics_output = scripts.evaluate_step12222(self.model,val_loader, self.metrics, device)
+        except Exception as e:
+            print(f"[ERROR] Failed during evaluation step: {e}")
+            return {}
     
+        # Sync metrics if in a distributed environment
+        if dist.is_initialized():
+            try:
+                print("[DEBUG] Syncing metrics across processes")
+                self.metrics = self.metrics.sync()
+                print("[DEBUG] Metrics synced successfully")
+            except Exception as e:
+                print(f"[ERROR] Failed to sync metrics: {e}")
+                return {}
+        
+        return metrics_output
+
+    def test(self):
+        """Evaluate the model on the test data."""
+        test_metrics = self.evaluate_metrics(self.test_data)
+        if self.rank == 0:
+            print(f"Test Metrics: {test_metrics}")
+
+    def early_stop(self, train_loss):
+        """Implement early stopping logic."""
+        return self.early_stop(train_loss)
+
     def cleanup(self):
         dist.destroy_process_group()
+
+
 
 def get_subset(dataset, fraction=0.2, seed=420):
     torch.manual_seed(seed) 
@@ -198,15 +237,21 @@ def get_subset(dataset, fraction=0.2, seed=420):
     return Subset(dataset, indices)
 
 
+def init_weights(m):
+    if isinstance(m, nn.Linear):
+        nn.init.xavier_uniform_(m.weight)
+        if m.bias is not None:
+            nn.init.zeros_(m.bias)
+
 def main(rank: int, world_size: int):
-    """Main function for distributed training."""
+
     try:
         # Step 1: Set up the process group for distributed training
         ddp_setup(rank, world_size)
         
         # Step 2: Load training objects (datasets, model, optimizer, etc.)
         train_set, val_set, test_set, pathway_groups, model, optimizer, config = load_train_objs()
-
+        
         #### Subset datasets for faster training and debugging ####
         train_subset = get_subset(train_set, fraction=0.001)
         val_subset = get_subset(val_set, fraction=0.001)
@@ -217,12 +262,12 @@ def main(rank: int, world_size: int):
         train_data = prepare_dataloader(train_subset, batch_size=config["optimizer"]["batch_size"])
         val_data = prepare_dataloader(val_subset, batch_size=config["optimizer"]["batch_size"])
         test_data = prepare_dataloader(test_subset, batch_size=config["optimizer"]["batch_size"])
-        
+
         # Step 4: Initialize the trainer object
-        trainer = Trainer(model, train_data, val_data, test_data, optimizer, rank, save_every=config["env"]["save_every"])
+        trainer = Trainer(model, train_data, val_data, test_data, optimizer, rank,config["env"]["save_every"],config)
         
         # Step 5: Start the training and testing process
-        trainer.train(config)
+        trainer.train()
         trainer.test()
     
     except Exception as e:

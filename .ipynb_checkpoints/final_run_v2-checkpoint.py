@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd 
 from torch import nn
 from torch.utils.data import Subset 
-from torchmetrics import MetricTracker
+from torchmetrics import Metric
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -36,7 +36,7 @@ def setup_config(pathway_groups):
             "pathway_groups": pathway_groups, 
             "layer_modes": [True, False, True],
             "pooling_mode": "pathway",
-            "aggr_modes": ["mean", "max", "mean"],
+            "aggr_modes": ["sum", "max", "mean"],
             "num_pathways_per_instance": 44
         },
         "resnet": {
@@ -51,7 +51,7 @@ def setup_config(pathway_groups):
         },
         "optimizer": {
             "learning_rate": 1e-5,
-            "batch_size": 4,  
+            "batch_size": 8,  
             "clip_norm": 1.0,
             "stopping_patience": 10,
         },
@@ -99,38 +99,31 @@ def prepare_dataloader(dataset: Dataset, batch_size: int):
         batch_size=batch_size,
         pin_memory=True,
         shuffle=False,
-        sampler=DistributedSampler(dataset)
+        sampler=DistributedSampler(dataset),
+        drop_last=True
     )
 
 
 
 def train_step(model, optimizer, train_data, config, device):
-    """
-    Perform a single training step for the model.
-    Only computes MSE loss during training.
-    """
     loss_fn = nn.MSELoss()
     total_loss = 0
     model.train()
 
     for batch_idx, batch in enumerate(train_data, start=1):
         try:
-            # Unpack the batch
             cell_graph_batch, drug_tensor_batch, target_batch, _, _ = batch
 
-            # Move data to the device
             cell_graph = cell_graph_batch.to(device)
             drug_vector = drug_tensor_batch.to(device)
             targets = target_batch.to(device)
 
             optimizer.zero_grad()
 
-            # Forward pass through the CombinedModel
             outputs = model(cell_graph, drug_vector)
             outputs = outputs.view(-1)
             targets = targets.view(-1)
 
-            # Compute loss
             loss = loss_fn(outputs, targets)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), config["optimizer"]["clip_norm"])
@@ -142,37 +135,6 @@ def train_step(model, optimizer, train_data, config, device):
             continue
 
     return total_loss / len(train_data)
-
-
-
-
-
-
-def train_model(model, optimizer, train_data, val_data, epoch, rank, config):
-    
-    device = torch.device(f'cuda:{rank}')
-    early_stop = scripts.EarlyStop(config["optimizer"]["stopping_patience"])
-
-    for epoch in range(config["env"]["max_epochs"]):
-        # Training step
-        train_loss = train_step(model, optimizer, train_data, config, device)
-
-        # Log training loss
-        if rank == 0:
-            print(f"Epoch {epoch + 1}: Train Loss = {train_loss:.4f}")
-
-        # Validation step
-        if val_data is not None:
-            validation_metrics = scripts.evaluate_step(model, val_data, metrics, device)
-            if rank == 0:
-                print(f"Validation Metrics: {validation_metrics}")
-
-        # Early stopping
-        if rank == 0 and early_stop(train_loss):
-            print(f"Early stopping at epoch {epoch + 1}.")
-            break
-
-    return model
 
 class Trainer:
     def __init__(self, model, train_data, val_data, test_data, optimizer, rank, save_every, config):
@@ -186,65 +148,65 @@ class Trainer:
         self.config = config
         self.model = DDP(model, device_ids=[rank])
 
-        # Initialize the metric tracker with GroupwiseMetric
-        self.metrics = MetricTracker(torchmetrics.MetricCollection(
-            {"R_cellwise_residuals": scripts.GroupwiseMetric(
-                metric=torchmetrics.functional.pearson_corrcoef,
-                grouping="drugs",
-                average="macro",
-                residualize=True),
-             "R_cellwise": scripts.GroupwiseMetric(
-                metric=torchmetrics.functional.pearson_corrcoef,
-                grouping="cell_lines",
-                average="macro",
-                residualize=False),
-             "MSE": torchmetrics.MeanSquaredError()  
-            }))
 
+        self.metrics = torchmetrics.MetricTracker(torchmetrics.MetricCollection(
+    {"R_cellwise_residuals":GroupwiseMetric(metric=torchmetrics.functional.pearson_corrcoef,
+                          grouping="drugs",
+                          average="macro",
+                          residualize=True),
+    "R_cellwise":GroupwiseMetric(metric=torchmetrics.functional.pearson_corrcoef,
+                          grouping="cell_lines",
+                          average="macro",
+                          residualize=False),
+    "MSE":torchmetrics.MeanSquaredError()}))
         self.metrics.to(rank)
         self.early_stop = scripts.EarlyStop(config["optimizer"]["stopping_patience"])
 
     def train(self):
         for epoch in range(self.config["env"]["max_epochs"]):
-            # Train the model
+
             train_loss = train_step(self.model, self.optimizer, self.train_data, self.config, self.rank)
             if self.rank == 0:
                 print(f"Epoch {epoch}: Training Loss = {train_loss:.4f}")
-                
-            print("before eval")
-            # Validate the model
-            validation_metrics = self.evaluate_metrics(self.val_data)
+            
             if self.rank == 0:
+                validation_metrics = self.evaluate_metrics(self.val_data)
                 print(f"Validation Metrics: {validation_metrics}")
 
-            # Save periodically
+
             if epoch % self.save_every == 0 and self.rank == 0:
                 print(f"[INFO] Checkpoint at Epoch {epoch}")
 
-            # Early stopping check
+
             if self.early_stop(train_loss):
                 print(f"Early stopping at epoch {epoch}.")
                 break
-    def evaluate_metrics(self, data_loader):
-        """Evaluate metrics on the validation or test data."""
-        print("in evaluate metrics")
-        device = torch.device(f'cuda:{self.rank}')
-        return scripts.evaluate_step(self.model, data_loader, self.metrics, device)
+                
+    def evaluate_metrics(self, loader):
+
+        
+        device = torch.device(f"cuda:{self.rank}")
+        if self.rank == 0:
+            metrics_output = scripts.evaluate_step(self.model, loader, self.metrics, device)
+            #metrics_output = scripts.evaluate_step12222(self.model,loader, self.metrics, device)
+            print("back")
+            return metrics_output
+        else:
+            return None
+        
 
     def test(self):
-        """Evaluate the model on the test data."""
+
         test_metrics = self.evaluate_metrics(self.test_data)
         if self.rank == 0:
             print(f"Test Metrics: {test_metrics}")
 
     def early_stop(self, train_loss):
-        """Implement early stopping logic."""
+
         return self.early_stop(train_loss)
 
     def cleanup(self):
         dist.destroy_process_group()
-
-
 
 def get_subset(dataset, fraction=0.2, seed=420):
     torch.manual_seed(seed) 
@@ -269,9 +231,9 @@ def main(rank: int, world_size: int):
         train_set, val_set, test_set, pathway_groups, model, optimizer, config = load_train_objs()
         
         #### Subset datasets for faster training and debugging ####
-        train_subset = get_subset(train_set, fraction=0.001)
-        val_subset = get_subset(val_set, fraction=0.001)
-        test_subset = get_subset(test_set, fraction=0.001)
+        train_subset = get_subset(train_set, fraction=0.05)
+        val_subset = get_subset(val_set, fraction=0.05)
+        test_subset = get_subset(test_set, fraction=0.05)
         ###########################################################
         
         # Step 3: Prepare the distributed data loaders

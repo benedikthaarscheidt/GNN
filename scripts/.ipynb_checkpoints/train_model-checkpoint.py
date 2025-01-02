@@ -162,57 +162,74 @@ def custom_collate_fn(batch):
         raise e
 
 
+
+def evaluate_step12222(model, loader, metrics, device):
+    metrics.increment()
+    model.eval()
+    for x in loader:
+        with torch.no_grad():
+            out = model(x[0].to(device), x[1].to(device))
+            print(out.shape)
+            print(f"Outputs: {out.squeeze().shape}, Targets: {x[2].to(device).squeeze().shape}")
+            print(f"Cell Lines: {x[3].to(device).squeeze().shape}, Drugs: {x[4].to(device).squeeze().shape}")
+            metrics.update(out.squeeze(),
+                           x[2].to(device).squeeze(),
+                           cell_lines = x[3].to(device).squeeze().to(device),
+                           drugs = x[4].to(device).squeeze().to(device))
+    return {it[0]:it[1].item() for it in metrics.compute().items()}
+
 def evaluate_step(model, loader, metrics, device):
     print("[INFO] Starting evaluation step")
     metrics.increment()
     model.eval()
-    
     with torch.no_grad():
         for batch_idx, batch in enumerate(loader, start=1):
             try:
-                # Unpack the batch
+
                 cell_graph_batch, drug_tensor_batch, target_batch, cell_id_batch, drug_id_batch = batch
 
-                # Move data to the device
+
                 cell_graph = cell_graph_batch.to(device)
                 drug_vector = drug_tensor_batch.to(device)
                 targets = target_batch.to(device)
-                cell_ids = cell_id_batch.to(device).long()
-                drug_ids = drug_id_batch.to(device).long()
+                cell_ids = cell_id_batch.to(device)
+                drug_ids = drug_id_batch.to(device)
 
-                # Forward pass through the CombinedModel
+
                 outputs = model(cell_graph, drug_vector)
 
-                # Debugging outputs and shapes
-                print(f"[DEBUG] Raw Outputs Shape: {outputs.shape}")
 
-                # Ensure outputs have consistent dimensions
-                outputs = outputs.view(-1)  # Flatten into 1D tensor for batch processing
+                outputs = outputs.view(-1)  
                 targets = targets.view(-1)
                 cell_ids = cell_ids.view(-1)
                 drug_ids = drug_ids.view(-1)
 
-                # Guard against empty or invalid tensors
+
                 if outputs.numel() == 0 or targets.numel() == 0 or cell_ids.numel() == 0 or drug_ids.numel() == 0:
-                    print("[WARNING] Empty or invalid tensors encountered. Skipping batch.")
+                    print(f"[WARNING] Empty tensors. Skipping batch {batch_idx}.")
                     continue
 
-                print(f"[DEBUG] Final Outputs Shape: {outputs.shape}")
-                print(f"[DEBUG] Targets Shape: {targets.shape}")
-                print(f"[DEBUG] Cell IDs Shape: {cell_ids.shape}, Drug IDs Shape: {drug_ids.shape}")
 
-                # Update metrics
                 metrics.update(outputs, targets, cell_lines=cell_ids, drugs=drug_ids)
 
             except Exception as e:
                 print(f"[ERROR] Batch {batch_idx} encountered an error: {e}")
                 continue
 
-    # Compute final metrics
-    return {key: value.item() for key, value in metrics.compute().items()}
 
+    try:
+        print("[DEBUG] MetricTracker internal metric collection:", metrics.base)
+        print("[DEBUG] Registered Metrics:", metrics.base.keys())
+        print("[INFO] Computing metrics")
+        ## this is what doesnt work  for some reason the computation does not proceed and the comoute method is not called (no debug statement printed)
+        local_metrics = {it[0]:it[1].item() for it in metrics.compute().items()}
+        metrics.reset() 
+        print("[INFO] Metrics computed successfully")
+    except Exception as e:
+        print(f"[ERROR] Metrics computation failed: {e}")
+        local_metrics = {}
 
-
+    return local_metrics
 
 
 class EarlyStop():
@@ -268,6 +285,7 @@ class GroupwiseMetric(Metric):
         return self.get_residual(X, y)
 
     def compute(self) -> Tensor:
+        print("in compute")
         if self.grouping == "cell_lines":
             grouping = self.cell_lines
         elif self.grouping == "drugs":
@@ -282,6 +300,7 @@ class GroupwiseMetric(Metric):
         average = self.average
         nan_ignore = self.nan_ignore
         unique = grouping.unique()
+        print(f"unique:{unique}")
         proportions = []
         metrics = []
         for g in unique:
@@ -305,8 +324,48 @@ class GroupwiseMetric(Metric):
         self.pred = torch.cat([self.pred, preds])
         self.drugs = torch.cat([self.drugs, drugs]).long()
         self.cell_lines = torch.cat([self.cell_lines, cell_lines]).long()
+        
+def get_residual(X, y, alpha=0.001):
+    w = get_linear_weights(X, y, alpha=alpha)
+    r = y-(X@w)
+    return r
+def get_linear_weights(X, y, alpha=0.01):
+    A = X.T@X
+    Xy = X.T@y
+    n_features = X.size(1)
+    A.flatten()[:: n_features + 1] += alpha
+    return torch.linalg.solve(A, Xy).T
+def residual_correlation(y_pred, y_obs, drug_id, cell_id):
+    X = torch.cat([y_pred.new_ones(y_pred.size(0), 1),
+                   torch.nn.functional.one_hot(drug_id),
+                   torch.nn.functional.one_hot(cell_id)], 1).float()
+    r_pred = get_residual(X, y_pred)
+    r_obs = get_residual(X, y_obs)
+    return torchmetrics.functional.pearson_corrcoef(r_pred, r_obs)
 
+def get_residual_ind(y, drug_id, cell_id, alpha=0.001):
+    X = torch.cat([y.new_tensor.ones(y.size(0), 1), torch.nn.functional.one_hot(drug_id), torch.nn.functional.one_hot(cell_id)], 1).float()
+    return get_residual(X, y, alpha=alpha)
 
+def average_over_group(y_obs, y_pred, metric, grouping, average="macro", nan_ignore = False):
+    unique = grouping.unique()
+    proportions = []
+    metrics = []
+    for g in unique:
+        is_group = grouping == g
+        metrics += [metric(y_obs[grouping == g], y_pred[grouping == g])]
+        proportions += [is_group.sum()/len(is_group)]
+    if average is None:
+        return torch.stack(metrics)
+    if (average == "macro") & (nan_ignore):
+        return torch.nanmean(y_pred.new_tensor([metrics]))
+    if (average == "macro") & (not nan_ignore):
+        return torch.mean(y_pred.new_tensor([metrics]))
+    if (average == "micro") & (not nan_ignore):
+        return (y_pred.new_tensor([proportions])*y_pred.new_tensor([metrics])).sum()
+    else:
+        raise NotImplementedError
+        
 
 
 
