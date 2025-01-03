@@ -3,7 +3,8 @@ from torch import nn
 from torch.nn import functional as F
 from torch_geometric.nn import MessagePassing, aggr
 from torch_geometric.utils import subgraph
-from torch_scatter import scatter_add, scatter_max
+from torch_scatter import scatter_add, scatter_max,scatter_softmax
+import torch.autograd.profiler as profiler
 
 class ModularPathwayConv(MessagePassing):
     def __init__(self, in_channels, out_channels,num_pathways_per_instance, aggr_mode="sum"):
@@ -13,8 +14,9 @@ class ModularPathwayConv(MessagePassing):
         self.num_pathways_per_instance=num_pathways_per_instance
         self.linear = torch.nn.Linear(in_channels, out_channels)
         self.batch_norm = nn.BatchNorm1d(out_channels)
-        self.alpha = nn.Parameter(torch.tensor(0.001))
-        self.dropout = nn.Dropout(p=0.1) 
+        self.alpha = nn.Parameter(torch.tensor(0.01))
+        self.dropout = nn.Dropout(p=0.2) 
+        self.buffer=None
         self.edge_attention = nn.Sequential(
             nn.Linear(1, 32),
             nn.ReLU(),
@@ -22,56 +24,55 @@ class ModularPathwayConv(MessagePassing):
             nn.Sigmoid()
         )
 
-    def forward(self, x, edge_index, edge_attr=None, pathway_mode=False, pathway_tensor=None, batch=None):
+        
+        
+
+    def forward(self, x, edge_index, edge_attr=None, pathway_mode=False, pathway_subgraphs=None, batch=None):
+        
+        torch.cuda.empty_cache()
         if batch is None:
             raise ValueError("The 'batch' parameter is required for batched processing but is None.")
-
+    
         x = x.float()
-        #print(x.shape)
         x = self.linear(x)
         x = self.batch_norm(x)
         x = self.dropout(x)
-
-        if not pathway_mode or pathway_tensor is None:
-            x_updated = (self.propagate(edge_index, x=x, edge_attr=edge_attr) + x)
+    
+        if pathway_mode and pathway_subgraphs:
+            return self._process_precomputed_pathways(x, pathway_subgraphs)
         else:
-            x_updated = self._process_pathways(x, edge_index, edge_attr, pathway_tensor, batch)
+            return self.propagate(edge_index, x=x, edge_attr=edge_attr).add_(x)
 
-        return x_updated
-
-    def _process_pathways(self, x, edge_index, edge_attr, pathway_tensors, batch):
-        x_updated = torch.zeros_like(x)  # This stays on the same device as x
+    def _process_precomputed_pathways(self, x, pathway_subgraphs):
         
-        for pathway_index in range(pathway_tensors.size(0)):
-            nodes = pathway_tensors[pathway_index, :]
-            nodes = nodes[nodes >= 0] 
+        if not hasattr(self, "buffer") or self.buffer is None or self.buffer.size() != x.size():
+            self.buffer = torch.zeros_like(x, device=x.device)
+        
+        self.buffer.zero_()  # Reset buffer to zero
+    
+        for sub_edge_index, sub_edge_attr, nodes in pathway_subgraphs:
             if nodes.numel() == 0:
                 continue
-                
-            
-            sub_edge_index, _ = subgraph(nodes, edge_index, relabel_nodes=False)
-            sub_edge_attr = None
-            if edge_attr is not None:
-                edge_mask = torch.isin(edge_index[0], nodes) & torch.isin(edge_index[1], nodes)
-                sub_edge_attr = edge_attr[edge_mask]
     
-            x_propagated = self.propagate(sub_edge_index, x=x, edge_attr=sub_edge_attr)
-            
-            x_updated[nodes] = (x_propagated[nodes] + x[nodes])
-            
-        return x_updated
+            self.buffer[nodes].add_(self.propagate(sub_edge_index, x=x, edge_attr=sub_edge_attr)[nodes]).add_(x[nodes])
+    
+        return self.buffer
 
-           
-    def message(self, x_j, edge_attr=None):
+
+    
+    def message(self, x_j, edge_attr=None, index=None):
         if edge_attr is not None:
-            edge_attr=edge_attr * self.alpha
-            attention_scores = self.edge_attention(edge_attr.view(-1, 1))
+            if edge_attr.dim() == 1:
+                edge_attr = edge_attr.unsqueeze(-1)
+            edge_attr = edge_attr * self.alpha
+            attention_scores = scatter_softmax(self.edge_attention(edge_attr), index=index, dim=0)
             return x_j * attention_scores
         else:
-            return x_j 
+            return x_j
 
 
 class ModularGNN(nn.Module):
+    precomputed_subgraphs = None
     def __init__(self, input_dim, hidden_dim, output_dim,num_pathways_per_instance, pathway_groups=None, layer_modes=None, pooling_mode=None, aggr_modes=None):
         super().__init__()
         self.num_pathways_per_instance = num_pathways_per_instance
@@ -91,6 +92,47 @@ class ModularGNN(nn.Module):
         self.layers.append(ModularPathwayConv(hidden_dim, output_dim, num_pathways_per_instance, aggr_mode=aggr_modes[-1]))
 
     
+    
+    
+    def precompute_subgraphs(self, pathway_tensor, edge_index, edge_attr=None):
+        precomputed_subgraphs = []
+        for pathway in pathway_tensor:
+            nodes = pathway[pathway >= 0]  # Remove padding (-1)
+            sub_edge_index, edge_mask = subgraph(nodes, edge_index, relabel_nodes=False)
+            sub_edge_attr = edge_attr[edge_mask] if edge_attr is not None else None
+            precomputed_subgraphs.append((sub_edge_index, sub_edge_attr, nodes))
+        return precomputed_subgraphs
+
+    def shift_subgraphs(self, precomputed_subgraphs, batch):
+        node_offsets = torch.cumsum(torch.bincount(batch), dim=0).to(batch.device)
+        node_start_indices = torch.cat([torch.tensor([0], device=batch.device), node_offsets[:-1]])
+    
+        shifted_subgraphs = []
+        for graph_idx in range(batch.max().item() + 1):
+            graph_subgraphs = []
+            for sub_edge_index, sub_edge_attr, nodes in precomputed_subgraphs:
+                # Shift node indices for the current graph
+                shifted_nodes = nodes + node_start_indices[graph_idx]
+                shifted_edge_index = sub_edge_index.clone()
+                shifted_edge_index[0] += node_start_indices[graph_idx]
+                shifted_edge_index[1] += node_start_indices[graph_idx]
+                graph_subgraphs.append((shifted_edge_index, sub_edge_attr, shifted_nodes))
+            shifted_subgraphs.append(graph_subgraphs)
+        return shifted_subgraphs
+    
+    def _shift_individual_pathways(self, pathway_tensors, batch):
+        node_offsets = torch.cumsum(batch.bincount(), dim=0).to(batch.device)
+        node_start_indices = torch.cat([torch.tensor([0], device=batch.device), node_offsets[:-1]])
+        
+        pathway_tensors_reshaped = pathway_tensors.view(batch.max() + 1, self.num_pathways_per_instance, -1).to(batch.device)
+        
+        for graph_idx in range(batch.max().item() + 1):
+            node_offset = node_start_indices[graph_idx]
+            shifted_pathway_tensor = pathway_tensors_reshaped[graph_idx]
+            shifted_pathway_tensor[shifted_pathway_tensor >= 0] += node_offset  # No device mismatch
+        
+        return pathway_tensors_reshaped.view(-1, pathway_tensors.size(-1))
+
     def _shift_global_pathways(self, batch):
         node_offsets = torch.cumsum(batch.bincount(), dim=0).to(batch.device)
         node_start_indices = torch.cat([torch.tensor([0], device=node_offsets.device), node_offsets[:-1]]) 
@@ -106,24 +148,29 @@ class ModularGNN(nn.Module):
             shifted_pathway_tensor[shifted_pathway_tensor >= 0] += node_offset  # No device mismatch now
         
         return pathway_tensors_reshaped.view(-1, pathway_tensors_reshaped.size(-1))
-
-    
-    def _shift_individual_pathways(self, pathway_tensors, batch):
-        node_offsets = torch.cumsum(batch.bincount(), dim=0).to(batch.device)
-        node_start_indices = torch.cat([torch.tensor([0], device=batch.device), node_offsets[:-1]])
         
-        pathway_tensors_reshaped = pathway_tensors.view(batch.max() + 1, self.num_pathways_per_instance, -1).to(batch.device)
-        
-        for graph_idx in range(batch.max().item() + 1):
-            node_offset = node_start_indices[graph_idx]
-            shifted_pathway_tensor = pathway_tensors_reshaped[graph_idx]
-            shifted_pathway_tensor[shifted_pathway_tensor >= 0] += node_offset  # No device mismatch
-        
-        return pathway_tensors_reshaped.view(-1, pathway_tensors.size(-1))
-    
     def forward(self, x, edge_index, edge_attr=None, pathway_tensor=None, batch=None):
-        """Forward pass for the GNN."""
-        
+        if self.precomputed_subgraphs is None and pathway_tensor is not None:
+            self.precomputed_subgraphs = self.precompute_subgraphs(pathway_tensor, edge_index, edge_attr)
+        # Shift the subgraphs dynamically for the current batch
+        shifted_subgraphs = (
+            self.shift_subgraphs(self.precomputed_subgraphs, batch)
+            if self.precomputed_subgraphs is not None
+            else None
+        )
+        for i, layer in enumerate(self.layers):
+            x = layer(
+                x,
+                edge_index,
+                edge_attr=edge_attr,
+                pathway_mode=self.layer_modes[i],
+                pathway_subgraphs=shifted_subgraphs,
+                batch=batch,
+            )
+
+
+
+        ######## this is just for the pooling later
         if pathway_tensor is not None:
             pathway_groups_shifted = self._shift_individual_pathways(pathway_tensor, batch)
         elif self.pathway_groups is not None:
@@ -133,18 +180,9 @@ class ModularGNN(nn.Module):
     
         if batch is not None:
             batch_size = batch.unique().size(0)  # No changes here
-    
-        for i, layer in enumerate(self.layers):
-            x = layer(
-                x, 
-                edge_index, 
-                edge_attr=edge_attr, 
-                pathway_mode=self.layer_modes[i], 
-                pathway_tensor=pathway_groups_shifted, 
-                batch=batch
-            )
+        ##############
         #print(f"x shape before flattening:{x.shape}")
-        # Handling different pooling modes
+
         if self.pooling_mode == 'pathway':
             if pathway_groups_shifted is not None:
                 x = self.aggregate_by_pathway(x, edge_index, edge_attr, pathway_groups_shifted, batch=batch)
