@@ -1,5 +1,7 @@
 import sys
 import os
+import sys
+import os
 import torch
 import torch.nn.functional as F
 from torch.utils.data import Dataset
@@ -21,19 +23,21 @@ import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 def ddp_setup(rank, world_size):
+    """Setup the distributed environment for DDP."""
     os.environ["MASTER_ADDR"] = "localhost"
     os.environ["MASTER_PORT"] = "12355"
     torch.cuda.set_device(rank)
     dist.init_process_group(backend='nccl', rank=rank, world_size=world_size)
     
 def setup_config(pathway_groups):
+    """Return the configuration dictionary"""
     config = {
         "gnn": {
             "input_dim": 1,
             "hidden_dim": 128,
             "output_dim": 1,
             "pathway_groups": pathway_groups, 
-            "layer_modes": [True, False, True],
+            "layer_modes": [True, True, True],
             "pooling_mode": "pathway",
             "aggr_modes": ["mean", "mean", "mean"],
             "num_pathways_per_instance": 44
@@ -50,12 +54,12 @@ def setup_config(pathway_groups):
         },
         "optimizer": {
             "learning_rate": 1e-4,
-            "batch_size": 8,  
+            "batch_size": 32,  
             "clip_norm": 1.0,
             "stopping_patience": 10,
         },
         "env": {
-            "max_epochs": 50,
+            "max_epochs": 20,
             "world_size": torch.cuda.device_count(),  
             "local_rank": 0,  
             "master_addr": "localhost",  
@@ -108,29 +112,55 @@ def train_step(model, optimizer, train_data, config, device):
     loss_fn = nn.MSELoss()
     total_loss = 0
     model.train()
+
+    # Prefetch data to GPU for the next batch
+    prefetch_iterator = iter(train_data)
+    next_batch = next(prefetch_iterator, None)
+
     with tqdm(total=len(train_data), desc="Training", unit="batch", leave=False) as pbar:
-        for batch_idx, batch in enumerate(train_data, start=1):
+        for batch_idx in range(1, len(train_data) + 1):
             try:
-                cell_graph_batch, drug_tensor_batch, target_batch, _, _ = batch
-                cell_graph = cell_graph_batch.to(device)
-                drug_vector = drug_tensor_batch.to(device)
-                targets = target_batch.to(device)
+
+                current_batch = next_batch
+                next_batch = next(prefetch_iterator, None)
+
+                if current_batch is None:
+                    break
+                
+                cell_graph_batch, drug_tensor_batch, target_batch, *_ = current_batch
+                cell_graph = cell_graph_batch.to(device, non_blocking=True)
+                drug_vector = drug_tensor_batch.to(device, non_blocking=True)
+                targets = target_batch.to(device, non_blocking=True)
+
                 optimizer.zero_grad()
                 outputs = model(cell_graph, drug_vector)
                 outputs = outputs.view(-1)
                 targets = targets.view(-1)
                 loss = loss_fn(outputs, targets)
                 loss.backward()
+
                 torch.nn.utils.clip_grad_norm_(model.parameters(), config["optimizer"]["clip_norm"])
                 optimizer.step()
+
                 total_loss += loss.item()
                 pbar.update(1)
                 pbar.set_postfix({"Batch Loss": loss.item()})
+
+                if next_batch is not None:
+                    cell_graph_batch, drug_tensor_batch, target_batch, *_ = next_batch
+                    _ = (
+                        cell_graph_batch.to(device, non_blocking=True),
+                        drug_tensor_batch.to(device, non_blocking=True),
+                        target_batch.to(device, non_blocking=True),
+                    )
             except Exception as e:
                 print(f"Error in batch {batch_idx}: {e}")
                 continue
+
     return total_loss / len(train_data)
 
+
+    
 class Trainer:
     def __init__(self, model, train_data, val_data, test_data, optimizer, rank, save_every, config):
         self.rank = rank
@@ -224,9 +254,9 @@ def main(rank: int, world_size: int):
         train_set, val_set, test_set, pathway_groups, model, optimizer, config = load_train_objs()
         
         #### Subset datasets for faster training and debugging ####
-        train_subset = get_subset(train_set, fraction=0.001)
-        val_subset = get_subset(val_set, fraction=0.001)
-        test_subset = get_subset(test_set, fraction=0.001)
+        train_subset = get_subset(train_set, fraction=0.002)
+        val_subset = get_subset(val_set, fraction=0.002)
+        test_subset = get_subset(test_set, fraction=0.002)
         ###########################################################
         
         # Step 3: Prepare the distributed data loaders

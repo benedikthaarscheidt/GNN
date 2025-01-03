@@ -1,0 +1,7 @@
+SLURM_JOB_NODELIST: n-hpc-gz6
+SLURM_GPUS_ON_NODE: 3
+CUDA_VISIBLE_DEVICES: 0,1,2
+Traceback (most recent call last):
+  File "/work/haarscheid/cancer_baseline2/cancer_baseline/Graphs/final_run_v2.py", line 4, in <module>
+    import torch.nn.functional as F
+ModuleNotFoundError: No module named 'torch.nn.functional'
