@@ -21,23 +21,23 @@ class ResNet(nn.Module):
                     nn.LayerNorm(hidden_dim),
                     nn.ReLU(),
                     nn.Dropout(dropout),
-                    nn.Linear(hidden_dim, embed_dim)  # Make sure this goes back to embed_dim
+                    nn.Linear(hidden_dim, embed_dim)  
                 )
             )
         
-        self.final_layer = nn.Linear(embed_dim, 1)  # Final prediction layer (optional)
-        self._init_weights()  # Initialize weights using xavier uniform
+        self.final_layer = nn.Linear(embed_dim, 1) 
+        self._init_weights()  
 
     def _init_weights(self):
         for module in self.modules():
             if isinstance(module, nn.Linear):
                 nn.init.xavier_uniform_(module.weight)
                 if module.bias is not None:
-                    nn.init.constant_(module.bias, 0)  # Bias set to 0
+                    nn.init.constant_(module.bias, 0) 
 
     def forward(self, x):
         for i, layer in enumerate(self.layers):
-            x = (layer(x) + x) * 0.5  # Residual connection with stabilization
+            x = (layer(x) + x) * 0.5  
         x = self.final_layer(x)
         return x
 
@@ -49,10 +49,12 @@ class CombinedModel(nn.Module):
         self.gnn = gnn
         self.drug_mlp = drug_mlp
         self.resnet = resnet
+        self.cell_weight = nn.Parameter(torch.tensor(0.5))
+        self.drug_weight = nn.Parameter(torch.tensor(0.5))
+
 
     def forward(self, cell_graph, drug_vector, pathway_tensor=None):
 
-        # Cell embedding via GNN
         cell_embedding = self.gnn(
             x=cell_graph.x,
             edge_index=cell_graph.edge_index,
@@ -61,20 +63,17 @@ class CombinedModel(nn.Module):
             batch=cell_graph.batch 
         )
         
-        # Handle extra dimensions in the GNN output
         if cell_embedding.dim() == 3 and cell_embedding.size(2) == 1: 
-            cell_embedding = cell_embedding.squeeze(-1)  # Squeeze only the third dimension
+            cell_embedding = cell_embedding.squeeze(-1) 
         
-        # Drug embedding via DrugMLP
+
         drug_embedding = self.drug_mlp(drug_vector.float())
 
-        # Shape consistency check
         assert cell_embedding.shape == drug_embedding.shape, f"Shape mismatch: {cell_embedding.shape} vs {drug_embedding.shape}"
 
-        # Combine embeddings
-        combined_embedding = (cell_embedding + drug_embedding) * 0.5  # Stabilized combination
+        combined_embedding = (cell_embedding * torch.sigmoid(self.cell_weight)) + \
+                             (drug_embedding * torch.sigmoid(self.drug_weight))
         
-        # Pass the combined embedding to ResNet
         return self.resnet(combined_embedding)
 
 class DrugMLP(nn.Module):
