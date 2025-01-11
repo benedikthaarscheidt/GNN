@@ -3,52 +3,49 @@ from torch import nn
 from torch.nn import functional as F
 from torch_geometric.nn import MessagePassing, aggr
 from torch_geometric.utils import subgraph
-from torch_scatter import scatter_add, scatter_max,scatter_softmax,scatter
+from torch_scatter import scatter_add, scatter_max,scatter_softmax
 import torch.autograd.profiler as profiler
-from sklearn.linear_model import Ridge
-from torch_geometric.utils import to_dense_adj, dense_to_sparse
 
 
 
 
 
 class ModularPathwayConv(MessagePassing):
-    def __init__(self, in_channels, out_channels, num_pathways_per_instance, aggr_mode="sum"):
+    def __init__(self, in_channels, out_channels,num_pathways_per_instance, aggr_mode="sum"):
         super().__init__(aggr=aggr_mode)  
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.num_pathways_per_instance = num_pathways_per_instance
+        self.num_pathways_per_instance=num_pathways_per_instance
         self.linear = torch.nn.Linear(in_channels, out_channels)
-        self.batch_norm = nn.BatchNorm1d(out_channels)
+        #self.batch_norm = nn.BatchNorm1d(out_channels)
         self.alpha = nn.Parameter(torch.tensor(0.01))
-        self.dropout = nn.Dropout(p=0.2) 
-        self.buffer = None
+        #self.dropout = nn.Dropout(p=0.2) 
+        self.buffer=None
         self.edge_attention = nn.Sequential(
             nn.Linear(1, 32),
             nn.ReLU(),
             nn.Linear(32, 1),
             nn.Sigmoid()
         )
+
     def forward(self, x, edge_index, edge_attr=None, pathway_mode=True, pathway_subgraphs=None, batch=None):
-        torch.cuda.empty_cache()
         
+        torch.cuda.empty_cache()
         if batch is None:
             raise ValueError("The 'batch' parameter is required for batched processing but is None.")
-        
-        # Apply node transformations
+    
         x = x.float()
         x = self.linear(x)
-        x = self.batch_norm(x)
-        x = self.dropout(x)
-
-
-        # Process subgraphs if pathway mode is enabled
+        #x = self.batch_norm(x)
+        #x = self.dropout(x)
+    
         if pathway_mode and pathway_subgraphs:
             return self._process_precomputed_pathways(x, pathway_subgraphs)
         else:
             return self.propagate(edge_index, x=x, edge_attr=edge_attr).add_(x)
 
     def _process_precomputed_pathways(self, x, pathway_subgraphs):
+        
         if not hasattr(self, "buffer") or self.buffer is None or self.buffer.size() != x.size():
             self.buffer = torch.zeros_like(x, device=x.device)
         
@@ -61,7 +58,6 @@ class ModularPathwayConv(MessagePassing):
         return self.buffer
 
 
-        
     def message(self, x_j, edge_attr=None, index=None):
         if edge_attr is not None:
             if edge_attr.dim() == 1:
@@ -71,13 +67,6 @@ class ModularPathwayConv(MessagePassing):
             return x_j * attention_scores
         else:
             return x_j
-
-
-
-
-
-
-
 
 ######################################################################################
 
@@ -111,6 +100,7 @@ class ModularGNN(nn.Module):
         self.pathway_groups = pathway_groups  
         self.pooling_mode = pooling_mode
         self.layer_modes = layer_modes or [False] * 3  
+
         if aggr_modes is None:
             aggr_modes = ['sum'] * 3  
             
@@ -128,10 +118,9 @@ class ModularGNN(nn.Module):
                     dropout=0.2
                 )
             )
-
-
     
-    def forward(self, x, edge_index, edge_attr=None, pathway_tensor=None, batch=None, recompute_subgraphs=False, prune_edges=False):
+    
+    def forward(self, x, edge_index, edge_attr=None, pathway_tensor=None, batch=None):
         if self.precomputed_subgraphs is None and pathway_tensor is not None:
             self.precomputed_subgraphs = self.precompute_subgraphs(pathway_tensor, edge_index, edge_attr)
 
@@ -150,6 +139,7 @@ class ModularGNN(nn.Module):
                 pathway_subgraphs=shifted_subgraphs,
                 batch=batch
             )
+
 
         ######## this is just for the pooling later
         if pathway_tensor is not None:
@@ -228,6 +218,8 @@ class ModularGNN(nn.Module):
                 aggregated_pathway_features[graph_idx, pathway_idx] = pathway_embedding
         
         return aggregated_pathway_features
+
+
 
 
     def precompute_subgraphs(self, pathway_tensor, edge_index, edge_attr=None):
