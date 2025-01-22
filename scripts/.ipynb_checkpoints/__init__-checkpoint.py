@@ -9,7 +9,7 @@ from .model_ResNet import ResNet, CombinedModel, DrugMLP
 
 
 # Import training logic
-from .train_model import  evaluate_step, GroupwiseMetric, EarlyStop, custom_collate_fn, get_data,evaluate_step12222, get_residual,get_linear_weights,residual_correlation,get_residual_ind,average_over_group
+from .train_model import  evaluate_step, GroupwiseMetric, EarlyStop, get_data,get_residual,get_linear_weights,residual_correlation,get_residual_ind,average_over_group
 
 # Define the public API for `import *`
 __all__ = [
@@ -24,7 +24,6 @@ __all__ = [
     "evaluate_step",
     "EarlyStop",
     "get_data",
-    "evaluate_step12222",
     "get_residual",
     "get_linear_weights",
     "residual_correlation",
