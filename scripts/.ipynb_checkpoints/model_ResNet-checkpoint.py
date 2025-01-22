@@ -55,14 +55,17 @@ class CombinedModel(nn.Module):
 
     def forward(self, cell_graph, drug_vector, pathway_tensor=None):
 
-        cell_embedding = self.gnn(
-            x=cell_graph.x,
-            edge_index=cell_graph.edge_index,
-            edge_attr=cell_graph.edge_attr if 'edge_attr' in cell_graph else None,
-            pathway_tensor=pathway_tensor if pathway_tensor is not None else None,
-            batch=cell_graph.batch 
-        )
-        
+        try:
+            cell_embedding = self.gnn(
+                x=cell_graph.x,
+                edge_index=cell_graph.edge_index,
+                edge_attr=cell_graph.edge_attr if 'edge_attr' in cell_graph else None,
+                pathway_tensor=pathway_tensor if pathway_tensor is not None else None,
+                batch=cell_graph.batch 
+            )
+        except Exception as e:
+            print("GNN is faulty")
+            raise e 
         if cell_embedding.dim() == 3 and cell_embedding.size(2) == 1: 
             cell_embedding = cell_embedding.squeeze(-1) 
         

@@ -62,10 +62,26 @@ def get_data(n_fold=0, fp_radius=2):
         list(mapped_gene_network.edges(data="weight")),
         columns=["source", "target", "weight"]
     )
+    
+    # Fill missing weights with 1.0 and ensure weights are floats
     edges_df["weight"] = edges_df["weight"].fillna(1.0).astype(float)
+    
+    # Filter edges for valid nodes
     filtered_edges = edges_df[
         (edges_df["source"].isin(valid_nodes)) & (edges_df["target"].isin(valid_nodes))
     ]
+    
+    # Calculate the 20th percentile of edge weights
+    
+    threshold = filtered_edges["weight"].quantile(0.3)
+    
+    # Filter out edges with weights below the 20th percentile
+    filtered_edges = filtered_edges[filtered_edges["weight"] >= threshold]
+    
+    # Reset index (optional)
+    filtered_edges = filtered_edges.reset_index(drop=True)
+    
+    print(f"Number of edges after filtering: {len(filtered_edges)}")
     node_to_idx = {node: idx for idx, node in enumerate(valid_nodes)}
     filtered_edges["source_idx"] = filtered_edges["source"].map(node_to_idx)
     print(filtered_edges)
@@ -200,7 +216,6 @@ class GroupwiseMetric(Metric):
         return self.get_residual(X, y)
 
     def compute(self) -> Tensor:
-        print("in compute")
         if self.grouping == "cell_lines":
             grouping = self.cell_lines
         elif self.grouping == "drugs":
@@ -226,9 +241,7 @@ class GroupwiseMetric(Metric):
             y_pred = y_pred.squeeze()  # Remove any extra dimensions
             grouping = grouping.squeeze().long() 
             is_group = grouping == g
-            print(f"y_obs:{y_obs.shape}")
-            print(f"y_pred:{y_pred.shape}")
-            print(f"grouping:{grouping.shape}")
+            
 
             
             
@@ -252,7 +265,7 @@ class GroupwiseMetric(Metric):
             raise NotImplementedError
     
     def update(self, preds: Tensor, target: Tensor,  drugs: Tensor,  cell_lines: Tensor) -> None:
-        print("in update")
+        
         preds = preds.squeeze()  
         target = target.squeeze()
         drugs = drugs.view(-1).long()  
@@ -311,7 +324,6 @@ def average_over_group(y_obs, y_pred, metric, grouping, average="macro", nan_ign
         raise NotImplementedError     
     
 def evaluate_step(model, loader, metrics, device):
-    print("in eval")
     metrics.increment()
     model.eval()
     for x in loader:
